@@ -6,17 +6,7 @@ El Sistema Inteligente de Apoyo Agricola (SIA) es una solucion tecnologica avanz
 
 El SIA Nicaragua ha sido desarrollado como una herramienta modular que permite a los productores y tecnicos agricolas visualizar el estado actual y futuro del clima en diversos municipios del pais. La plataforma no solo muestra datos crudos, sino que los procesa a traves de un motor de logica agronomica para determinar si las condiciones son favorables para cultivos especificos, como granos basicos (maiz y frijol).
 
-## Flujo de Trabajo
 
-```mermaid
-graph TD
-    A[Usuario] --> B[Interfaz Streamlit]
-    B --> C[Modulo de Clima]
-    C --> D[Analisis Agronomico]
-    D --> E[Consulta IA Gemini]
-    E --> F[Resultados y Recomendaciones]
-    F --> B
-```
 
 ## Estructura de Directorios
 
