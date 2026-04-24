@@ -1,0 +1,87 @@
+/* SIA Nicaragua - Rediseño Total Contraste Elevado */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+/* FONDO GENERAL - NO MÁS BLANCO */
+[data-testid="stAppViewContainer"] {
+    background-color: #f0f4f0 !important; /* Verde grisáceo claro */
+    background-image: radial-gradient(#dcedc8 1px, transparent 1px) !important;
+    background-size: 20px 20px !important;
+}
+
+[data-testid="stHeader"] {
+    background-color: rgba(240, 244, 240, 0.8) !important;
+}
+
+/* SIDEBAR - CONTRASTE MÁXIMO */
+[data-testid="stSidebar"] {
+    background-color: #1b5e20 !important;
+}
+[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
+
+/* CUADROS DE TEXTO Y INPUTS - VISIBILIDAD TOTAL */
+input, select, textarea, [data-baseweb="select"] {
+    background-color: #ffffff !important;
+    color: #1a1a1a !important;
+    border: 2px solid #2e7d32 !important;
+    border-radius: 10px !important;
+}
+
+/* CONTENEDORES TIPO CARD (st.container(border=True)) */
+div[data-testid="stVerticalBlockBorder"] {
+    background-color: #ffffff !important;
+    border: 2px solid #2e7d32 !important;
+    padding: 30px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    overflow: visible !important; /* Para que el texto fluya */
+}
+
+/* AJUSTE DE TEXTO PARA QUE ENCAJE */
+p, span, div {
+    line-height: 1.6 !important;
+    word-break: break-word !important;
+}
+
+/* MÉTRICAS */
+[data-testid="stMetric"] {
+    background: #ffffff !important;
+    border-bottom: 5px solid #2e7d32 !important;
+    padding: 15px !important;
+    border-radius: 10px !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: #1b5e20 !important;
+    font-weight: 800 !important;
+}
+
+/* BOTÓN PRINCIPAL */
+.stButton>button {
+    background-color: #2e7d32 !important;
+    color: white !important;
+    border: 2px solid #1b5e20 !important;
+    border-radius: 12px !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton>button:hover {
+    background-color: #1b5e20 !important;
+    transform: scale(1.02) !important;
+}
+
+/* TÍTULOS */
+h1, h2, h3 {
+    font-family: 'Outfit', sans-serif;
+    color: #1b5e20 !important;
+    font-weight: 700 !important;
+}
+
+/* ALERTAS (SUCCESS, INFO, ETC) */
+.stAlert {
+    border-radius: 15px !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+}

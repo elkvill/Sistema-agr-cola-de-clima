@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/data.json
+.vscode/
+.env
+api_keys.txt
