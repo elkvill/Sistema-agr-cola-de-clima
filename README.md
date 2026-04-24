@@ -1,72 +1,69 @@
-# 🌾 Sistema Inteligente de Apoyo Agrícola (SIA Nicaragua)
+# Sistema Inteligente de Apoyo Agricola - SIA Nicaragua
 
-El **Sistema Inteligente de Apoyo Agrícola (SIA)** es una plataforma avanzada diseñada para proporcionar soporte en la toma de decisiones agronómicas en Nicaragua. Utilizando datos meteorológicos en tiempo real e Inteligencia Artificial, el sistema ofrece recomendaciones personalizadas para optimizar los ciclos de cultivo y mitigar riesgos climáticos.
+El Sistema Inteligente de Apoyo Agricola (SIA) es una solucion tecnologica avanzada diseñada para la gestion y soporte de decisiones en el sector agropecuario de Nicaragua. Este sistema integra analisis de datos meteorologicos en tiempo real con capacidades de Inteligencia Artificial para ofrecer recomendaciones precisas sobre ciclos de siembra, gestion de riesgos y monitoreo climatico.
 
-## 🚀 Características Principales
+## Descripcion del Proyecto
 
-- **Monitoreo Climático en Tiempo Real**: Integración con las APIs de Open-Meteo y OpenWeather para obtener datos precisos de temperatura, humedad y precipitaciones.
-- **Cobertura Nacional**: Análisis específico para los principales municipios de Nicaragua, distinguiendo entre zonas agrícolas y urbanas.
-- **Recomendaciones Inteligentes (IA)**: Generación de consejos expertos utilizando modelos de lenguaje de última generación (Google Gemini).
-- **Dashboard Estadístico**: Visualización interactiva de tendencias de temperatura y pronósticos de humedad mediante gráficos dinámicos.
-- **Calendario de Riesgo**: Clasificación diaria de condiciones (Favorable, Normal, Riesgoso) para planificar actividades de siembra.
-- **Chat Experto**: Interfaz de chat integrada para resolver dudas específicas sobre el manejo de cultivos.
-- **Diseño Premium**: Interfaz moderna, responsiva y optimizada para una experiencia de usuario fluida.
+El SIA Nicaragua ha sido desarrollado como una herramienta modular que permite a los productores y tecnicos agricolas visualizar el estado actual y futuro del clima en diversos municipios del pais. La plataforma no solo muestra datos crudos, sino que los procesa a traves de un motor de logica agronomica para determinar si las condiciones son favorables para cultivos especificos, como granos basicos (maiz y frijol).
 
-## 🛠️ Tecnologías Utilizadas
+## Arquitectura del Sistema
 
-- **Lenguaje**: Python 3.10+
-- **Framework Web**: Streamlit
-- **Visualización**: Plotly Express
-- **Procesamiento de Datos**: Pandas
-- **IA**: Google Generative AI (Gemini API)
-- **Estilos**: CSS3 personalizado (Glassmorphism)
+El proyecto sigue una estructura modular para facilitar su mantenimiento y escalabilidad:
 
-## 📁 Estructura del Proyecto
+- **Capa de Aplicacion (app.py)**: Orquesta la interfaz de usuario con Streamlit, gestionando el flujo de datos entre los servicios y los componentes visuales.
+- **Capa de APIs (api/)**: Contiene la logica de conexion con servicios externos:
+    - **Open-Meteo**: Utilizado para pronosticos gratuitos y de alta precision sin necesidad de llave de API.
+    - **OpenWeather**: Alternativa para datos actuales mas granulares.
+    - **Google Gemini**: Implementa el cerebro de IA para analisis predictivo y recomendaciones personalizadas.
+- **Capa de Servicios (services/)**: Ejecuta el motor de analisis agronomico y clasificacion de riesgos.
+- **Capa de Componentes (components/)**: Define la visualizacion, incluyendo graficos de Plotly y tarjetas de diseño personalizado.
+- **Capa de Configuracion (config/)**: Centraliza los umbrales climaticos y las coordenadas geograficas de los municipios.
 
-```text
-ProyectoExamenSismos/
-├── api/                # Módulos de conexión con servicios externos (Gemini, Clima)
-├── components/         # Componentes visuales y gráficos interactivos
-├── config/             # Parámetros de configuración y umbrales agrícolas
-├── data/               # Persistencia de datos históricos (JSON)
-├── services/           # Lógica de negocio y motores de análisis
-├── styles/             # Hojas de estilo personalizadas
-├── utils/              # Funciones matemáticas y estadísticas
-├── app.py              # Punto de entrada principal de la aplicación
-└── README.md           # Documentación del proyecto
-```
+## Funcionalidades Detalladas
 
-## ⚙️ Configuración e Instalación
+### 1. Analisis Climatico Predictivo
+El sistema evalua variables criticas para el sector agricola:
+- **Temperatura**: Monitoreo de estres termico (umbral > 35 grados Celsius).
+- **Precipitacion**: Deteccion de riesgos de inundacion o erosion (> 20mm).
+- **Humedad Relativa**: Analisis de riesgos fitosanitarios (hongos o plagas) en rangos extremos (< 40% o > 80%).
 
-1. **Clonar el repositorio**:
+### 2. Integracion Resiliente con IA
+El modulo de IA (Gemini) cuenta con un sistema de redundancia:
+- Intenta primero el modelo **Gemini 2.0 Flash** para maxima velocidad.
+- Si hay errores de cuota o disponibilidad, escala automaticamente a **Gemini 1.5 Flash**.
+- Como ultimo recurso, utiliza el modelo **Flash Latest**.
+
+### 3. Visualizacion de Datos
+- **Tendencias**: Graficos interactivos que comparan temperaturas maximas y minimas previstas para los proximos 7 dias.
+- **Distribucion de Humedad**: Graficos de barras que permiten identificar periodos de sequia o saturacion hidrica.
+- **Calendario de Riesgo**: Una matriz visual que clasifica los dias futuros segun el indice de favorabilidad agricola.
+
+### 4. Persistencia de Consultas
+El sistema almacena automaticamente cada analisis realizado en un archivo historico (`data/data.json`). Esto permite llevar un registro de las condiciones consultadas y las recomendaciones emitidas por la IA para su posterior auditoria o analisis estadistico.
+
+## Configuracion de Seguridad y APIs
+
+Para mantener la integridad del sistema en entornos publicos (como GitHub), se han implementado las siguientes medidas:
+- **Archivo api_keys.txt**: Un respaldo local que contiene las llaves de acceso reales.
+- **Exclusion via .gitignore**: Archivos sensibles como historicos de datos y llaves de acceso estan excluidos del repositorio.
+- **Placeholders**: En `config/settings.py`, las llaves estan reemplazadas por etiquetas descriptivas para evitar fugas de informacion.
+
+## Instrucciones de Instalacion
+
+1. Asegurese de tener instalado Python 3.10 o superior.
+2. Clone este repositorio en su maquina local.
+3. Instale las bibliotecas necesarias:
    ```bash
-   git clone https://github.com/elkvill/Sistema-agr-cola-de-clima.git
+   pip install streamlit pandas plotly requests google-generativeai
    ```
-
-2. **Instalar dependencias**:
-   ```bash
-   pip install streamlit pandas plotly google-generativeai requests
-   ```
-
-3. **Configurar llaves de API**:
-   - Localiza el archivo `config/settings.py`.
-   - Reemplaza los placeholders `"TU_API_KEY_AQUI"` con tus llaves reales de OpenWeather y Google Gemini.
-   - *Nota: Consulta el archivo local `api_keys.txt` si tienes un respaldo de las mismas.*
-
-4. **Ejecutar la aplicación**:
+4. Configure sus credenciales en `config/settings.py` consultando su archivo de respaldo `api_keys.txt`.
+5. Ejecute el comando:
    ```bash
    streamlit run app.py
    ```
 
-## 📊 Lógica de Análisis
-
-El sistema evalúa las condiciones climáticas basándose en umbrales científicos:
-- **Calor Extremo**: > 35°C
-- **Frío Crítico**: < 15°C
-- **Lluvias Intensas**: > 20mm
-- **Humedad Crítica**: < 40% o > 80%
-
-Basado en estos datos, el motor de análisis clasifica los días y genera alertas automáticas para cultivos de granos básicos como maíz y frijol.
+## Municipios Soportados
+El sistema cuenta con coordenadas preconfiguradas para los 15 departamentos y las 2 regiones autonomas de Nicaragua, incluyendo logica especifica para diferenciar zonas predominantemente urbanas (como Managua) de zonas con alto potencial agricola.
 
 ---
-**Desarrollado por [Elkville]** - *Proyecto de Administración de Sistemas Informáticos*
+Proyecto desarrollado para el area de Administracion de Sistemas Informaticos - SIA Nicaragua.
