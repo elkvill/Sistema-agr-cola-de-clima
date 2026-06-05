@@ -1,29 +1,34 @@
 import google.generativeai as genai
 import streamlit as st
-from config.settings import GEMINI_API_KEY
+from config.settings import CLAVE_API_GEMINI
+
 
 def configurar_gemini():
     """
     Configura la API de Gemini.
     """
-    if not GEMINI_API_KEY:
+    if not CLAVE_API_GEMINI:
         return False
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
+        genai.configure(api_key=CLAVE_API_GEMINI)
         return True
     except Exception:
         return False
+
 
 def generar_recomendacion_ia(datos_clima):
     """
     Genera recomendación agrícola intentando varios modelos por si hay problemas de cuota.
     """
     if not configurar_gemini():
-        return "⚠️ API Key de Gemini no configurada en settings.py"
+        return "API Key de Gemini no configurada en settings.py"
 
-    # Intentamos con 2.0-flash primero (pedido por usuario), luego 1.5-flash y como último recurso flash-latest
-    modelos = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest']
-    
+    # Intentamos solo con los dos modelos más rápidos para no congelar la app si falla
+    modelos = [
+        'gemini-1.5-flash', 
+        'gemini-flash-latest'
+    ]
+
     ultimo_error = ""
     for model_name in modelos:
         try:
@@ -38,12 +43,13 @@ def generar_recomendacion_ia(datos_clima):
         except Exception as e:
             ultimo_error = str(e)
             if "429" in ultimo_error:
-                continue # Probar el siguiente si es error de cuota
+                continue  # Probar el siguiente si es error de cuota
             if "404" in ultimo_error:
-                continue # Probar el siguiente si no se encuentra
-            return f"❌ Error de IA ({model_name}): {ultimo_error}"
-            
-    return f"❌ No se pudo obtener respuesta de la IA. Posible cuota agotada o modelo no disponible. Detalles: {ultimo_error}"
+                continue  # Probar el siguiente si no se encuentra
+            return f"Error de IA ({model_name}): {ultimo_error}"
+
+    return f"No se pudo obtener respuesta de la IA. Posible cuota agotada o modelo no disponible. Detalles: {ultimo_error}"
+
 
 def chat_agricola(pregunta, datos_clima):
     """
@@ -52,8 +58,12 @@ def chat_agricola(pregunta, datos_clima):
     if not configurar_gemini():
         return "Chat no disponible."
 
-    modelos = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest']
-    
+    # Lista de modelos optimizada
+    modelos = [
+        'gemini-1.5-flash', 
+        'gemini-flash-latest'
+    ]
+
     for model_name in modelos:
         try:
             model = genai.GenerativeModel(model_name)
@@ -63,5 +73,5 @@ def chat_agricola(pregunta, datos_clima):
             return response.text
         except Exception:
             continue
-            
+
     return "Lo siento, el servicio de IA está saturado o no disponible en este momento."

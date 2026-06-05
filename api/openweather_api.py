@@ -1,25 +1,25 @@
 import requests
 import streamlit as st
 
-def fetch_openweather_data(lat, lon, api_key):
+def obtener_datos_openweather(lat, lon, clave_api):
     """
-    Fetches current and 5-day forecast data from OpenWeatherMap.
-    Requires a valid API Key.
+    Obtiene datos meteorológicos actuales y pronóstico de 5 días de OpenWeatherMap.
+    Requiere una clave de API válida.
     """
-    if not api_key:
-        st.warning("API Key de OpenWeatherMap no configurada.")
+    if not clave_api:
+        print("API Key de OpenWeatherMap no configurada.")
         return None
 
     try:
-        # Current Weather
-        curr_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-        curr_resp = requests.get(curr_url, timeout=10)
+        # Clima Actual
+        curr_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={clave_api}&units=metric"
+        curr_resp = requests.get(curr_url, timeout=3)
         curr_resp.raise_for_status()
         curr_data = curr_resp.json()
         
-        # Forecast (5 days / 3 hours)
-        fore_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-        fore_resp = requests.get(fore_url, timeout=10)
+        # Pronóstico (5 días / 3 horas)
+        fore_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={clave_api}&units=metric"
+        fore_resp = requests.get(fore_url, timeout=3)
         fore_resp.raise_for_status()
         fore_data = fore_resp.json()
         
@@ -62,5 +62,5 @@ def fetch_openweather_data(lat, lon, api_key):
             
         return result
     except Exception as e:
-        st.error(f"Error al conectar con OpenWeatherMap: {e}")
+        print(f"Error al conectar con OpenWeatherMap: {e}")
         return None

@@ -1,29 +1,30 @@
 import streamlit as st
+import os
 
-def render_weather_card(title, value, unit, icon=""):
+def renderizar_tarjeta_clima(titulo, valor, unidad, icono=""):
     """
-    Renders a glassmorphism metric card.
+    Renderiza una tarjeta de métrica con estilo glassmorphism.
     """
     st.markdown(f"""
         <div class="weather-card">
-            <div class="metric-title">{icon} {title}</div>
-            <div class="metric-value">{value}{unit}</div>
+            <div class="metric-title">{icono} {titulo}</div>
+            <div class="metric-value">{valor}{unidad}</div>
         </div>
     """, unsafe_allow_html=True)
 
-def render_recommendation(rec_data):
+def renderizar_recomendacion(datos_rec):
     """
-    Renders the agricultural recommendation banner.
+    Renderiza el banner de recomendación agrícola.
     """
     st.markdown(f"""
-        <div class="recommendation-banner banner-{rec_data['color']}">
-            <div>{rec_data['mensaje']}</div>
+        <div class="recommendation-banner banner-{datos_rec['color']}">
+            <div>{datos_rec['mensaje']}</div>
         </div>
     """, unsafe_allow_html=True)
 
-def render_stats_indicators(stats):
+def renderizar_indicadores_estadisticas(stats):
     """
-    Renders a row of indicators for the dashboard.
+    Renderiza una fila de indicadores para el dashboard.
     """
     if not stats: return
     
@@ -37,12 +38,31 @@ def render_stats_indicators(stats):
     with col4:
         st.metric("Tendencia", stats['tendencia'])
 
-def inject_custom_css(file_path):
+def inyectar_css_personalizado(ruta_archivo):
     """
-    Injects the custom CSS into the Streamlit app.
+    Inyecta el CSS personalizado en la aplicación de Streamlit.
     """
-    if os.path.exists(file_path):
-        with open(file_path, encoding='utf-8') as f:
-            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-import os # Missing import check
+    posibles_rutas = [
+        ruta_archivo,
+        os.path.join(os.getcwd(), ruta_archivo),
+        os.path.join(os.path.dirname(__file__), "..", "styles", "styles.css"),
+        "styles/styles.css"
+    ]
+    
+    contenido_css = None
+    for ruta in posibles_rutas:
+        if os.path.exists(ruta):
+            with open(ruta, encoding='utf-8') as f:
+                contenido_css = f.read()
+                break
+    
+    if contenido_css:
+        st.markdown(f'<style>{contenido_css}</style>', unsafe_allow_html=True)
+    else:
+        # Estilos de emergencia mínimos
+        st.markdown("""
+            <style>
+            .stApp { background-color: #F5F5DC !important; }
+            [data-testid="stSidebar"] { background-color: #1b5e20 !important; }
+            </style>
+        """, unsafe_allow_html=True)

@@ -1,9 +1,9 @@
 import requests
 import streamlit as st
 
-def fetch_openmeteo_data(lat, lon):
+def obtener_datos_openmeteo(lat, lon):
     """
-    Fetches current and 7-day forecast data from Open-Meteo.
+    Obtiene datos meteorológicos actuales y pronóstico de 7 días de Open-Meteo.
     """
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -16,7 +16,7 @@ def fetch_openmeteo_data(lat, lon):
     }
     
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=3)
         response.raise_for_status()
         data = response.json()
         
@@ -44,5 +44,5 @@ def fetch_openmeteo_data(lat, lon):
             
         return result
     except Exception as e:
-        st.error(f"Error al conectar con Open-Meteo: {e}")
+        print(f"Error al conectar con Open-Meteo: {e}")
         return None

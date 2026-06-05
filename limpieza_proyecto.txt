@@ -1,0 +1,37 @@
+=== GUÍA DE LIMPIEZA DEL PROYECTO ===
+
+Para que el proyecto funcione correctamente, DEBES mantener la estructura principal de código. Sin embargo, hay algunos archivos y carpetas que son temporales, de respaldo o de pruebas que puedes borrar de forma segura:
+
+1. Carpeta 'scratch/'
+   - Propósito: Contiene scripts de prueba (test_gemini.py, list_models.py) que usamos para verificar las llaves de API.
+   - Decisión: SE PUEDE BORRAR. No afecta el funcionamiento de la aplicación principal (app.py).
+
+2. Archivo 'api_keys.txt'
+   - Propósito: Es un respaldo manual de las llaves de API y fragmentos de CSS.
+   - Decisión: SE PUEDE BORRAR siempre y cuando las llaves ya estén configuradas en 'config/settings.py'.
+
+3. Carpeta '.git/' (Oculta)
+   - Propósito: Historial de versiones de Git.
+   - Decisión: SE PUEDE BORRAR si no piensas usar Git para subir cambios a GitHub.
+
+4. Archivo '.gitignore'
+   - Propósito: Indica a Git qué archivos no subir.
+   - Decisión: SE PUEDE BORRAR si no usas Git.
+
+5. Archivo 'README.md'
+   - Propósito: Documentación del proyecto.
+   - Decisión: SE PUEDE BORRAR (aunque se recomienda dejarlo para saber de qué trata el proyecto).
+
+6. Carpeta 'data/' -> Solo el archivo 'data.json'
+   - Propósito: Guarda el historial de consultas.
+   - Decisión: PUEDES BORRAR EL CONTENIDO si quieres resetear el historial de la aplicación. La carpeta debe quedarse, o la app la creará de nuevo.
+
+--- ARCHIVOS QUE NO DEBES BORRAR (CRÍTICOS) ---
+- app.py (Archivo principal)
+- api/ (Lógica de conexión a satélites/IA)
+- components/ (Diseño de la interfaz)
+- config/ (Configuración y Llaves de API)
+- services/ (Lógica de análisis agrícola)
+- styles/ (Estilos visuales CSS)
+- utils/ (Cálculos estadísticos y Generador de PDF)
+- .streamlit/ (Configuración del servidor Streamlit)

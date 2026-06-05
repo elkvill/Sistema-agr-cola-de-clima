@@ -2,11 +2,11 @@ import plotly.express as px
 import pandas as pd
 import streamlit as st
 
-def plot_temperature_trend(forecast_data):
+def graficar_tendencia_temperatura(datos_pronostico):
     """
-    Plots the temperature trend using Plotly.
+    Grafica la tendencia de temperatura usando Plotly.
     """
-    df = pd.DataFrame(forecast_data)
+    df = pd.DataFrame(datos_pronostico)
     df['fecha_formateada'] = pd.to_datetime(df['date']).dt.strftime('%d %b')
     
     fig = px.line(df, x='fecha_formateada', y=['temp_max', 'temp_min'],
@@ -22,13 +22,13 @@ def plot_temperature_trend(forecast_data):
         hovermode="x unified"
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig)
 
-def plot_humidity_forecast(forecast_data):
+def graficar_pronostico_humedad(datos_pronostico):
     """
-    Plots the humidity forecast using Plotly.
+    Grafica el pronóstico de humedad usando Plotly.
     """
-    df = pd.DataFrame(forecast_data)
+    df = pd.DataFrame(datos_pronostico)
     df['fecha_formateada'] = pd.to_datetime(df['date']).dt.strftime('%d %b')
     
     fig = px.bar(df, x='fecha_formateada', y='humidity',
@@ -43,4 +43,4 @@ def plot_humidity_forecast(forecast_data):
         coloraxis_showscale=False
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig)

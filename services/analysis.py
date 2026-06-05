@@ -1,22 +1,24 @@
-from config.settings import THRESHOLDS, CITIES
+from config.settings import UMBRALES, CIUDADES
 
-def analizar_condiciones(current_data):
+def analizar_condiciones(datos_actuales):
     """
     Analiza las condiciones actuales comparándolas con los umbrales.
     """
     condiciones = []
     
-    if current_data['temp'] >= THRESHOLDS['temp_max']:
+    if datos_actuales['temp'] >= UMBRALES['temp_max']:
         condiciones.append("CALOR_EXTREMO")
-    elif current_data['temp'] <= THRESHOLDS['temp_min']:
+    elif datos_actuales['temp'] <= UMBRALES['temp_min']:
         condiciones.append("FRIO_BAJO")
         
-    if current_data['precipitation'] >= THRESHOLDS['rain_heavy']:
+    # Nota: rain_heavy, humidity_low, etc. deben estar en UMBRALES o manejarse con cuidado
+    # Como el usuario solo vio una parte de settings.py, me aseguro de usar lo que existe
+    if datos_actuales['precipitation'] >= UMBRALES.get('rain_heavy', 10.0):
         condiciones.append("LLUVIA_INTENSA")
         
-    if current_data['humidity'] <= THRESHOLDS['humidity_low']:
+    if datos_actuales['humidity'] <= UMBRALES.get('humidity_low', 40.0):
         condiciones.append("HUMEDAD_BAJA")
-    elif current_data['humidity'] >= THRESHOLDS['humidity_high']:
+    elif datos_actuales['humidity'] >= UMBRALES.get('humidity_high', 85.0):
         condiciones.append("HUMEDAD_ALTA")
         
     return condiciones
@@ -26,7 +28,7 @@ def generar_recomendacion(ciudad, condiciones):
     Genera una recomendación basada en la ciudad y condiciones.
     """
     # Verificación de agricultura
-    if not CITIES[ciudad]["is_agricultural"]:
+    if not CIUDADES[ciudad]["es_agricola"]:
         return {
             "status": "URBAN",
             "mensaje": "Esta zona es predominantemente urbana. No se dispone de datos de suelo o ciclos de cultivo para recomendaciones agrícolas.",
@@ -60,16 +62,16 @@ def generar_recomendacion(ciudad, condiciones):
         "color": "normal"
     }
 
-def clasificar_dias(forecast):
+def clasificar_dias(pronostico):
     """
     Clasifica cada día del pronóstico.
     """
     clasificacion = []
-    for dia in forecast:
+    for dia in pronostico:
         score = 0
-        if dia['temp_max'] >= THRESHOLDS['temp_max']: score += 2
-        if dia['precipitation'] >= THRESHOLDS['rain_heavy']: score += 2
-        if dia['humidity'] <= THRESHOLDS['humidity_low']: score += 1
+        if dia['temp_max'] >= UMBRALES['temp_max']: score += 2
+        if dia['precipitation'] >= UMBRALES.get('rain_heavy', 10.0): score += 2
+        if dia['humidity'] <= UMBRALES.get('humidity_low', 40.0): score += 1
         
         if score == 0:
             label = "Favorable"

@@ -1,55 +1,57 @@
-/* SIA Nicaragua - Rediseño Total Contraste Elevado */
+/* SIA Nicaragua - Estilo Final Integrado */
+
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
-/* FONDO GENERAL - NO MÁS BLANCO */
-[data-testid="stAppViewContainer"] {
-    background-color: #f0f4f0 !important; /* Verde grisáceo claro */
-    background-image: radial-gradient(#dcedc8 1px, transparent 1px) !important;
-    background-size: 20px 20px !important;
+/* 1. PANEL DERECHO (FONDO BEIGE / AMARILLO SUAVE) */
+.stApp, [data-testid="stMainViewContainer"], .main, .block-container {
+    background-color: #F5F5DC !important; /* Beige solicitado */
+    background-image: none !important;
 }
 
-[data-testid="stHeader"] {
-    background-color: rgba(240, 244, 240, 0.8) !important;
-}
-
-/* SIDEBAR - CONTRASTE MÁXIMO */
-[data-testid="stSidebar"] {
+/* 2. PANEL IZQUIERDO (SIDEBAR VERDE) */
+section[data-testid="stSidebar"], 
+[data-testid="stSidebarContent"] {
     background-color: #1b5e20 !important;
 }
+
+/* Texto blanco en sidebar */
 [data-testid="stSidebar"] * {
     color: #ffffff !important;
+    font-family: 'Outfit', sans-serif;
 }
 
-/* CUADROS DE TEXTO Y INPUTS - VISIBILIDAD TOTAL */
-input, select, textarea, [data-baseweb="select"] {
-    background-color: #ffffff !important;
-    color: #1a1a1a !important;
-    border: 2px solid #2e7d32 !important;
-    border-radius: 10px !important;
+/* 3. ESTILOS GENERALES LIMPIOS */
+h1, h2, h3 {
+    color: #1b5e20 !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 700 !important;
 }
 
-/* CONTENEDORES TIPO CARD (st.container(border=True)) */
-div[data-testid="stVerticalBlockBorder"] {
-    background-color: #ffffff !important;
-    border: 2px solid #2e7d32 !important;
-    padding: 30px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    overflow: visible !important; /* Para que el texto fluya */
-}
-
-/* AJUSTE DE TEXTO PARA QUE ENCAJE */
 p, span, div {
-    line-height: 1.6 !important;
-    word-break: break-word !important;
+    font-family: 'Outfit', sans-serif;
 }
 
-/* MÉTRICAS */
-[data-testid="stMetric"] {
-    background: #ffffff !important;
-    border-bottom: 5px solid #2e7d32 !important;
-    padding: 15px !important;
+/* Botones en verde */
+.stButton > button {
+    background-color: #2e7d32 !important;
+    color: white !important;
+    border: none !important;
     border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #1b5e20 !important;
+    transform: scale(1.02);
+}
+
+/* Métricas limpias */
+[data-testid="stMetric"] {
+    background-color: white !important;
+    border-radius: 15px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+    padding: 15px !important;
 }
 
 [data-testid="stMetricValue"] {
@@ -57,31 +59,19 @@ p, span, div {
     font-weight: 800 !important;
 }
 
-/* BOTÓN PRINCIPAL */
-.stButton>button {
-    background-color: #2e7d32 !important;
-    color: white !important;
-    border: 2px solid #1b5e20 !important;
-    border-radius: 12px !important;
-    text-transform: uppercase !important;
-    font-weight: 700 !important;
-    transition: all 0.3s ease !important;
-}
-
-.stButton>button:hover {
-    background-color: #1b5e20 !important;
-    transform: scale(1.02) !important;
-}
-
-/* TÍTULOS */
-h1, h2, h3 {
-    font-family: 'Outfit', sans-serif;
-    color: #1b5e20 !important;
-    font-weight: 700 !important;
-}
-
-/* ALERTAS (SUCCESS, INFO, ETC) */
+/* Alertas */
 .stAlert {
     border-radius: 15px !important;
-    border: 1px solid rgba(0,0,0,0.1) !important;
+}
+
+/* --- AJUSTES DE INTERFAZ (SOLICITADOS) --- */
+
+/* 1. Eliminar texto 'keyboard_double' ocultando el botón de colapso */
+[data-testid="stSidebarCollapseButton"] {
+    display: none !important;
+}
+
+/* 2. Color negro para el selector de departamento */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] * {
+    color: #000000 !important;
 }

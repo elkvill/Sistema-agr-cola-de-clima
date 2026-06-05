@@ -55,8 +55,12 @@ El modulo de IA (Gemini) cuenta con un sistema de redundancia:
 - **Distribucion de Humedad**: Graficos de barras que permiten identificar periodos de sequia o saturacion hidrica.
 - **Calendario de Riesgo**: Una matriz visual que clasifica los dias futuros segun el indice de favorabilidad agricola.
 
-### 4. Persistencia de Consultas
-El sistema almacena automaticamente cada analisis realizado en un archivo historico (`data/data.json`). Esto permite llevar un registro de las condiciones consultadas y las recomendaciones emitidas por la IA para su posterior auditoria o analisis estadistico.
+### 4. Persistencia con SQLite Profesional
+El sistema cuenta con un motor de persistencia relacional basado en **SQLite**, estructurado según las mejores prácticas (triggers, vistas, índices, UDFs y transacciones):
+- **Esquema Relacional**: Se implementan tablas estructuradas para `ciudades`, `clima_actual`, `clima_pronostico` y `historial_consultas` con integridad referencial activa (`PRAGMA foreign_keys = ON;`) y eliminación en cascada.
+- **Auditoría Automatizada**: Mediante el trigger `trg_auditar_consulta` en la tabla `clima_actual`, el historial se registra de forma 100% autónoma en la base de datos sin depender de archivos planos JSON externos.
+- **Caché Inteligente y Resiliencia**: El sistema está optimizado para funcionar sin internet de manera transparente. Si hay conexión, actualiza SQLite usando `INSERT OR REPLACE`; si no la hay, entra en modo fallback y carga el último estado disponible localmente.
+- **Lógica en Base de Datos**: Se implementa una vista consolidada `vista_resumen_agricola` y funciones de Python registradas en el motor SQLite (UDFs) como `clasificar_clima` y `celsius_a_fahrenheit` para realizar operaciones complejas directamente en consultas SQL.
 
 ## Configuracion de Seguridad y APIs
 

@@ -1,6 +1,12 @@
+# Python cache
 __pycache__/
 *.pyc
+
+# Datos y configuración local
 data/data.json
 .vscode/
-.env
 api_keys.txt
+
+# Archivos de entorno y claves (¡Crucial!)
+.env
+.streamlit/secrets.toml

@@ -1,0 +1,192 @@
+================================================================================
+          INTEGRACIÓN DE SQLITE PROFESIONAL - SISTEMA AGRÍCOLA NICARAGUA
+================================================================================
+Autor: Antigravity AI Coding Assistant
+Fecha: 2026-05-22
+Objetivo: Explicación técnica de la implementación de la base de datos relacional
+          SQLite con triggers, vistas, índices, transacciones y UDFs en el 
+          proyecto "SIA Nicaragua" (ProyectoExamenSismos).
+================================================================================
+
+--------------------------------------------------------------------------------
+1. CORRECCIÓN DEL ESQUEMA DE LA BASE DE DATOS
+--------------------------------------------------------------------------------
+Al analizar la base de datos física `data_backup.db` se detectó que las tablas
+`clima_actual` y `clima_pronostico` habían sido creadas con un esquema incorrecto
+por una versión anterior del código. Los problemas encontrados fueron:
+
+ a) `clima_actual` en la BD real:
+    CREATE TABLE "clima_actual" ("temp" REAL, "humidity" INTEGER, ...)
+    * Sin PRIMARY KEY en `ciudad` -> INSERT OR REPLACE no reemplazaba,
+      creaba duplicados (37 registros para 17 ciudades).
+    * Sin FOREIGN KEY (ciudad) -> permitía datos huérfanos.
+    * Sin NOT NULL ni DEFAULT.
+    * Columna `humidity` como INTEGER en vez de REAL.
+
+ b) `clima_pronostico` en la BD real:
+    CREATE TABLE "clima_pronostico" ("date" TEXT, "temp_max" REAL, ...)
+    * Sin columna `id INTEGER PRIMARY KEY AUTOINCREMENT`.
+    * Sin FOREIGN KEY (ciudad) REFERENCES ciudades.
+    * Sin NOT NULL ni DEFAULT.
+
+ c) Tabla `historial_ia` (leftover) que no existe en el código actual.
+
+ d) Solo la tabla `historial_consultas` tenía el esquema correcto.
+
+* CAUSA RAÍZ:
+  El archivo `data_backup.db` se creó con una versión anterior del esquema.
+  Como `init_db()` usa "CREATE TABLE IF NOT EXISTS", al encontrar las tablas
+  ya existentes no las modificaba, quedando el esquema incorrecto para siempre.
+
+* SOLUCIÓN IMPLEMENTADA (services/database.py):
+  Se agregaron dos funciones en `services/database.py`:
+
+  1. `_esquema_necesita_recreacion(cursor)`:
+     Usa "PRAGMA table_info(clima_actual)" para verificar si la columna
+     `ciudad` es PRIMARY KEY (pk=1). Si la tabla no existe o el esquema
+     es correcto, retorna False. Si existe pero sin PK, retorna True.
+
+  2. `_recrear_esquema_completo(cursor, conn)`:
+     Elimina triggers, vistas y tablas mal creadas (clima_pronostico,
+     clima_actual, historial_ia) conservando ciudades e historial_consultas
+     que tenían esquemas correctos. Luego hace commit para aplicar los cambios.
+
+  3. En `init_db()` se llama a estas funciones ANTES de crear las tablas:
+     if _esquema_necesita_recreacion(cursor):
+         _recrear_esquema_completo(cursor, conn)
+     Luego "CREATE TABLE IF NOT EXISTS" recrea todo con el esquema correcto.
+
+  Esto permite que la próxima vez que se ejecute la aplicación se
+  auto-detecte y corrija cualquier esquema incorrecto automáticamente.
+
+* VERIFICACIÓN:
+  Se ejecutaron pruebas guardando y cargando las 17 ciudades desde
+  `config/settings.py`, confirmando que todas se guardan y cargan
+  correctamente, y que los triggers (trg_validar_humedad, trg_auditar_consulta)
+  y la vista (vista_resumen_agricola) funcionan sin errores.
+
+--------------------------------------------------------------------------------
+2. UBICACIÓN DEL ARCHIVO DE BASE DE DATOS
+--------------------------------------------------------------------------------
+El archivo de base de datos SQLite se crea automáticamente en la raíz del
+proyecto al ejecutar la aplicación:
+
+   proyectoExamenSismos/data_backup.db
+
+La variable que define esta ubicación está en `services/database.py` línea 5:
+
+   DB_PATH = 'data_backup.db'
+
+Al ser una ruta relativa, el archivo se crea en el directorio de trabajo
+actual (donde se ejecuta `streamlit run app.py`). Si se desea cambiar la
+ubicación, basta con modificar esta variable por una ruta absoluta, por
+ejemplo: DB_PATH = 'C:/datos/mi_base.db'
+
+La base de datos almacena:
+  - 17 ciudades preconfiguradas de Nicaragua (tabla ciudades)
+  - Clima actual de cada ciudad consultada (tabla clima_actual)
+  - Pronóstico semanal de cada ciudad (tabla clima_pronostico)
+  - Historial automático de consultas via trigger (tabla historial_consultas)
+
+Para visualizar su contenido se puede usar:
+  - Python directamente (consulta con sqlite3)
+  - DB Browser for SQLite (aplicación GUI gratuita)
+  - Extensión "SQLite Viewer" en VS Code
+
+--------------------------------------------------------------------------------
+3. DISEÑO DE LAS TABLAS SEGÚN LOS DATOS DE LA API
+--------------------------------------------------------------------------------
+Las tablas de la base de datos se diseñaron para almacenar exactamente los
+campos que devuelven las APIs meteorológicas (OpenWeatherMap y Open-Meteo),
+normalizándolos en un esquema relacional.
+
+ a) API OpenWeatherMap (api/openweather_api.py):
+    Endpoint de clima actual: "https://api.openweathermap.org/data/2.5/weather"
+    Endpoint de pronóstico:   "https://api.openweathermap.org/data/2.5/forecast"
+
+    Los datos se mapean a un formato estándar:
+    {
+      "current": {
+        "temp":          curr_data["main"]["temp"],         # Temperatura actual en °C
+        "humidity":      curr_data["main"]["humidity"],     # Humedad relativa en %
+        "precipitation": curr_data.get("rain",{}).get("1h", 0)  # Lluvia última hora en mm
+      },
+      "forecast": [
+        {
+          "date":          fecha del bloque,                 # Fecha del día
+          "temp_max":      max temp del día,                 # Máxima del día en °C
+          "temp_min":      min temp del día,                 # Mínima del día en °C
+          "precipitation": suma de lluvia del día,           # Precipitación acumulada en mm
+          "humidity":      promedio del día                  # Humedad promedio en %
+        },
+        ...  # 5 días de pronóstico (OpenWeather) o 7 días (Open-Meteo)
+      ]
+    }
+
+ b) API Open-Meteo (api/openmeteo_api.py):
+    Endpoint: "https://api.open-meteo.com/v1/forecast"
+    Devuelve la misma estructura estandarizada después del mapeo,
+    permitiendo que la aplicación funcione con cualquiera de las dos APIs
+    sin cambiar el código de base de datos (configurable desde
+    config/settings.py con la variable USAR_API).
+
+ c) Mapeo de la API a las tablas SQLite:
+
+    TABLA ciudades:
+      Almacena el catálogo de municipios con sus coordenadas geográficas
+      (latitud, longitud) necesarias para consultar ambas APIs, más el
+      indicador es_agricola que determina si aplica el análisis agrícola
+      (Managua es la única ciudad urbana, es_agricola = False).
+
+    TABLA clima_actual:
+      Columna     | Origen en API            | Tipo   | Propósito
+      ------------|--------------------------|--------|---------------------------
+      ciudad      | Nombre del municipio     | TEXT PK| Identifica la ciudad (FK a ciudades)
+      temp        | current["temp"]          | REAL   | Temperatura actual en °C
+      humidity    | current["humidity"]      | REAL   | Humedad relativa actual en %
+      precipitation | current["precipitation"] | REAL | Precipitación actual en mm
+      fecha_guardado | datetime('now')       | TEXT   | Marca temporal automática
+
+      Se usó PRIMARY KEY (ciudad) para que INSERT OR REPLACE actualice
+      el registro si la ciudad ya existe, en lugar de crear duplicados.
+
+    TABLA clima_pronostico:
+      Columna      | Origen en API               | Tipo   | Propósito
+      -------------|-----------------------------|--------|---------------------------
+      id           | Autoincremental             | INT PK| Identificador único del registro
+      ciudad       | Nombre del municipio        | TEXT   | Ciudad del pronóstico (FK)
+      date         | forecast["date"]            | TEXT   | Fecha del pronóstico
+      temp_max     | forecast["temp_max"]        | REAL   | Temperatura máxima del día
+      temp_min     | forecast["temp_min"]        | REAL   | Temperatura mínima del día
+      precipitation | forecast["precipitation"]  | REAL   | Precipitación acumulada del día
+      humidity     | forecast["humidity"]        | REAL   | Humedad promedio del día
+      fecha_guardado | datetime('now')            | TEXT   | Marca temporal automática
+
+      Al ser una relación 1:N (una ciudad tiene muchos días de pronóstico),
+      se usó id AUTOINCREMENT como clave primaria y ciudad como clave
+      foránea. Antes de insertar un nuevo pronóstico se eliminan los
+      anteriores de esa ciudad con DELETE para mantener solo los vigentes.
+
+    TABLA historial_consultas:
+      Registro de auditoría poblado automáticamente por el trigger
+      trg_auditar_consulta cada vez que se inserta o reemplaza un registro
+      en clima_actual. Almacena fecha, ciudad, temperatura y el estado
+      agrícola calculado por la UDF clasificar_clima().
+
+ d) Flujo completo de los datos:
+    1. El usuario selecciona una ciudad y hace clic en "Analizar Clima"
+    2. app.py llama a obtener_clima_consolidado_v3(ciudad)
+    3. La función consulta la API configurada (OpenWeatherMap u Open-Meteo)
+    4. La API devuelve JSON con clima actual y pronóstico
+    5. Los datos se estandarizan al formato descrito arriba
+    6. save_to_local(ciudad, data) inserta los datos en SQLite:
+       - INSERT OR REPLACE en clima_actual (activa trigger de auditoría)
+       - DELETE + INSERT múltiple en clima_pronostico
+    7. Todo dentro de una transacción para garantizar atomicidad
+    8. Cuando no hay internet, load_from_local(ciudad) recupera
+       los datos desde SQLite con la misma estructura, permitiendo
+       que la UI funcione idénticamente en modo offline
+
+============================================================================
+                          ¡FIN DE LA EXPLICACIÓN!
+============================================================================
