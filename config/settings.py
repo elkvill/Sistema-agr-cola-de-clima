@@ -4,11 +4,10 @@
 # Opciones: "openmeteo", "openweather"
 USAR_API = "openmeteo"
 
-# Claves de API
-CLAVE_API_OPENWEATHER = ""
-# CLAVE_API_GEMINI = ""
-# CLAVE_API_GEMINI = "" esta es una clave que se estaba acabando
-CLAVE_API_GEMINI = ""
+# API Keys
+OPENWEATHER_API_KEY = "TU_API_KEY_AQUI"
+GEMINI_API_KEY = "TU_API_KEY_AQUI"
+
 # Configuración de Ciudades en Nicaragua
 # Contiene: latitud, longitud, es_agricola
 CIUDADES = {
