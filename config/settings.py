@@ -4,9 +4,10 @@
 # Opciones: "openmeteo", "openweather"
 USAR_API = "openmeteo"
 
-# API Keys
-OPENWEATHER_API_KEY = "TU_API_KEY_AQUI"
-GEMINI_API_KEY = "TU_API_KEY_AQUI"
+# API Keys (desde variables de entorno - nunca hardcodear)
+import os
+CLAVE_API_OPENWEATHER = os.environ.get("OPENWEATHER_API_KEY", "")
+CLAVE_API_GROQ = os.environ.get("GROQ_API_KEY", "")
 
 # Configuración de Ciudades en Nicaragua
 # Contiene: latitud, longitud, es_agricola
