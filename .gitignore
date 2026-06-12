@@ -17,4 +17,5 @@ api_keys.txt
 .streamlit/secrets.toml
 =======
 explicacion_completa_exposicion.txt
+Explicacion_SQLite.txt
 >>>>>>> 3eda9ca (Arquitectura Hexagonal)
