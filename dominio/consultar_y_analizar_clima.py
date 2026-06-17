@@ -6,6 +6,8 @@ from dominio.entidades import (
 from dominio.puertos import (
     ServicioClima, ServicioIA, RepositorioClima, ConsultarClima
 )
+from dominio.estadisticas import calcular_estadisticas
+from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
 
 
 UMBRALES = {
@@ -14,18 +16,18 @@ UMBRALES = {
 }
 
 
-def _analizar_condiciones(temp: float, humidity: float,
-                          precipitation: float) -> List[str]:
+def _analizar_condiciones(temperatura: float, humedad: float,
+                          precipitacion: float) -> List[str]:
     condiciones = []
-    if temp >= UMBRALES['temp_max']:
+    if temperatura >= UMBRALES['temp_max']:
         condiciones.append("CALOR_EXTREMO")
-    elif temp <= UMBRALES['temp_min']:
+    elif temperatura <= UMBRALES['temp_min']:
         condiciones.append("FRIO_BAJO")
-    if precipitation >= UMBRALES['rain_heavy']:
+    if precipitacion >= UMBRALES['rain_heavy']:
         condiciones.append("LLUVIA_INTENSA")
-    if humidity <= UMBRALES['humidity_low']:
+    if humedad <= UMBRALES['humidity_low']:
         condiciones.append("HUMEDAD_BAJA")
-    elif humidity >= UMBRALES['humidity_high']:
+    elif humedad >= UMBRALES['humidity_high']:
         condiciones.append("HUMEDAD_ALTA")
     return condiciones
 
@@ -34,30 +36,30 @@ def _generar_recomendacion_local(es_agricola: bool,
                                   condiciones: List[str]) -> AnalisisLocal:
     if not es_agricola:
         return AnalisisLocal(
-            status="URBAN",
+            estado="URBAN",
             mensaje="Zona urbana. Sin recomendaciones agricolas.",
             condiciones=[]
         )
     if not condiciones:
         return AnalisisLocal(
-            status="FAVORABLE",
+            estado="FAVORABLE",
             mensaje="Condiciones ideales para siembra y cultivo.",
             condiciones=[]
         )
     if "LLUVIA_INTENSA" in condiciones:
         return AnalisisLocal(
-            status="RIESGOSO",
+            estado="RIESGOSO",
             mensaje="Riesgo de inundacion. No aplicar fertilizantes.",
             condiciones=condiciones
         )
     if "CALOR_EXTREMO" in condiciones or "HUMEDAD_BAJA" in condiciones:
         return AnalisisLocal(
-            status="RIESGOSO",
+            estado="RIESGOSO",
             mensaje="Estres hidrico. Se recomienda riego temprano.",
             condiciones=condiciones
         )
     return AnalisisLocal(
-        status="NORMAL",
+        estado="NORMAL",
         mensaje="Condiciones aceptables. Monitorear el suelo.",
         condiciones=condiciones
     )
@@ -67,41 +69,26 @@ def _clasificar_dias(pronostico: List[dict]) -> List[dict]:
     clasificacion = []
     for dia in pronostico:
         score = 0
-        if dia['temp_max'] >= UMBRALES['temp_max']:
+        if dia['temperatura_max'] >= UMBRALES['temp_max']:
             score += 2
-        if dia['precipitation'] >= UMBRALES['rain_heavy']:
+        if dia['precipitacion'] >= UMBRALES['rain_heavy']:
             score += 2
-        if dia['humidity'] <= UMBRALES['humidity_low']:
+        if dia['humedad'] <= UMBRALES['humidity_low']:
             score += 1
         if score == 0:
-            label = "Favorable"
+            etiqueta = "Favorable"
         elif score <= 2:
-            label = "Normal"
+            etiqueta = "Normal"
         else:
-            label = "Riesgoso"
-        clasificacion.append({"date": dia['date'], "label": label})
+            etiqueta = "Riesgoso"
+        clasificacion.append({"fecha": dia['fecha'], "etiqueta": etiqueta})
     return clasificacion
 
 
 def _calcular_stats(pronostico: List[dict]) -> dict:
     if not pronostico:
         return {}
-    temps = [(d['temp_max'] + d['temp_min']) / 2 for d in pronostico]
-    media = sum(temps) / len(temps)
-    lluvia_total = sum(d.get('precipitation', 0) for d in pronostico)
-    max_temp = max(d['temp_max'] for d in pronostico)
-    min_temp = min(d['temp_min'] for d in pronostico)
-    tendencia = "Estable"
-    if len(temps) > 1:
-        diff = temps[-1] - temps[0]
-        if diff > 0.5:
-            tendencia = "En aumento"
-        elif diff < -0.5:
-            tendencia = "En descenso"
-    return {
-        "media": round(media, 1), "max": max_temp, "min": min_temp,
-        "lluvia_total": round(lluvia_total, 1), "tendencia": tendencia
-    }
+    return calcular_estadisticas(pronostico)
 
 
 class ObtenerClimaYAnalizar(ConsultarClima):
@@ -121,25 +108,25 @@ class ObtenerClimaYAnalizar(ConsultarClima):
             modo_offline = True
             datos = self._repositorio.cargar_clima(ciudad_nombre)
             if not datos:
-                raise RuntimeError(
+                raise DatosNoEncontradosError(
                     f"No hay datos locales para {ciudad_nombre}"
                 )
         else:
             try:
                 datos = self._servicio_clima.obtener_actual(lat, lon)
                 self._repositorio.guardar_clima(ciudad_nombre, datos)
-            except Exception:
+            except Exception as e:
                 datos_cargados = self._repositorio.cargar_clima(ciudad_nombre)
                 if datos_cargados:
                     datos = datos_cargados
                     modo_offline = True
                 else:
-                    raise RuntimeError(
-                        f"No hay datos disponibles para {ciudad_nombre}"
+                    raise ApiCaidaError(
+                        f"No hay conexión a internet y no se encontraron datos de respaldo locales para {ciudad_nombre}. Detalle: {e}"
                     )
 
         condiciones = _analizar_condiciones(
-            datos.actual.temp, datos.actual.humidity, datos.actual.precipitation
+            datos.actual.temperatura, datos.actual.humedad, datos.actual.precipitacion
         )
         analisis = _generar_recomendacion_local(es_agricola, condiciones)
 
@@ -147,8 +134,8 @@ class ObtenerClimaYAnalizar(ConsultarClima):
         if not modo_offline:
             try:
                 rec_ia = self._servicio_ia.generar_recomendacion(
-                    datos.actual.temp, datos.actual.humidity,
-                    datos.actual.precipitation
+                    datos.actual.temperatura, datos.actual.humedad,
+                    datos.actual.precipitacion
                 )
             except Exception:
                 rec_ia = ""
@@ -158,15 +145,18 @@ class ObtenerClimaYAnalizar(ConsultarClima):
             rec_ia = analisis_guardado.get('recomendacion_ia', '')
 
         self._repositorio.guardar_analisis(ciudad_nombre, analisis, rec_ia)
+        self._repositorio.guardar_consulta_historial(
+            ciudad_nombre, datos.actual.temperatura, analisis.estado
+        )
 
-        forecast_dicts = [
-            {"date": d.date, "temp_max": d.temp_max,
-             "temp_min": d.temp_min, "precipitation": d.precipitation,
-             "humidity": d.humidity}
-            for d in datos.forecast
+        pronostico_dicts = [
+            {"fecha": d.fecha, "temperatura_max": d.temperatura_max,
+             "temperatura_min": d.temperatura_min, "precipitacion": d.precipitacion,
+             "humedad": d.humedad}
+            for d in datos.pronostico
         ]
-        clasificacion = _clasificar_dias(forecast_dicts)
-        stats = _calcular_stats(forecast_dicts)
+        clasificacion = _clasificar_dias(pronostico_dicts)
+        estadisticas = _calcular_stats(pronostico_dicts)
 
         return ResultadoConsulta(
             ciudad=ciudad_nombre,
@@ -175,5 +165,5 @@ class ObtenerClimaYAnalizar(ConsultarClima):
             recomendacion_ia=rec_ia,
             clasificacion_dias=clasificacion,
             modo_offline=modo_offline,
-            stats=stats
+            estadisticas=estadisticas
         )

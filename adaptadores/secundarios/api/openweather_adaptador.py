@@ -26,29 +26,29 @@ class OpenWeatherAdapter(ServicioClima):
             fore = json.loads(r.read().decode())
 
         actual = MedicionActual(
-            temp=curr["main"]["temp"],
-            humidity=curr["main"]["humidity"],
-            precipitation=curr.get("rain", {}).get("1h", 0)
+            temperatura=curr["main"]["temp"],
+            humedad=curr["main"]["humidity"],
+            precipitacion=curr.get("rain", {}).get("1h", 0)
         )
 
-        daily = {}
+        diario = {}
         for item in fore["list"]:
             d = item["dt_txt"].split()[0]
-            if d not in daily:
-                daily[d] = {"tmax": -999, "tmin": 999, "precip": 0, "hum": []}
-            daily[d]["tmax"] = max(daily[d]["tmax"], item["main"]["temp_max"])
-            daily[d]["tmin"] = min(daily[d]["tmin"], item["main"]["temp_min"])
-            daily[d]["precip"] += item.get("rain", {}).get("3h", 0)
-            daily[d]["hum"].append(item["main"]["humidity"])
+            if d not in diario:
+                diario[d] = {"tmax": -999, "tmin": 999, "precip": 0, "hum": []}
+            diario[d]["tmax"] = max(diario[d]["tmax"], item["main"]["temp_max"])
+            diario[d]["tmin"] = min(diario[d]["tmin"], item["main"]["temp_min"])
+            diario[d]["precip"] += item.get("rain", {}).get("3h", 0)
+            diario[d]["hum"].append(item["main"]["humidity"])
 
-        forecast = []
-        for d, s in daily.items():
-            forecast.append(PronosticoDia(
-                date=d,
-                temp_max=s["tmax"],
-                temp_min=s["tmin"],
-                precipitation=s["precip"],
-                humidity=round(sum(s["hum"]) / len(s["hum"]), 1)
+        pronostico = []
+        for d, s in diario.items():
+            pronostico.append(PronosticoDia(
+                fecha=d,
+                temperatura_max=s["tmax"],
+                temperatura_min=s["tmin"],
+                precipitacion=s["precip"],
+                humedad=round(sum(s["hum"]) / len(s["hum"]), 1)
             ))
 
-        return DatosClima(actual=actual, forecast=forecast)
+        return DatosClima(actual=actual, pronostico=pronostico)

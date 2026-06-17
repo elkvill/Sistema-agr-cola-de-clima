@@ -11,19 +11,19 @@ class GroqAdapter(ServicioIA):
         self._url = "https://api.groq.com/openai/v1/chat/completions"
         self._model = "llama-3.1-8b-instant"
 
-    def generar_recomendacion(self, temp: float, humidity: float,
-                               precipitation: float) -> str:
+    def generar_recomendacion(self, temperatura: float, humedad: float,
+                               precipitacion: float) -> str:
         prompt = (
             "Actua como experto agricola en Nicaragua. "
-            f"Datos: Temp {temp}C, Humedad {humidity}%, "
-            f"Lluvia {precipitation}mm. "
+            f"Datos: Temp {temperatura}C, Humedad {humedad}%, "
+            f"Lluvia {precipitacion}mm. "
             "Genera una recomendacion breve y clara para el agricultor."
         )
         return self._llamar_groq(prompt)
 
-    def chat(self, pregunta: str, temp: float, humidity: float,
-             precipitation: float) -> str:
-        contexto = f"Clima: {temp}C, {humidity}%, {precipitation}mm."
+    def chat(self, pregunta: str, temperatura: float, humedad: float,
+             precipitacion: float) -> str:
+        contexto = f"Clima: {temperatura}C, {humedad}%, {precipitacion}mm."
         prompt = f"{contexto}\n\nPregunta: {pregunta}"
         return self._llamar_groq(prompt)
 

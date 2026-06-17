@@ -1,14 +1,14 @@
 import os
 
-from config.settings import (
+from configuracion.ajustes import (
     USAR_API, CLAVE_API_OPENWEATHER, CLAVE_API_GROQ, CIUDADES
 )
-from dominio.casos_de_uso import ObtenerClimaYAnalizar
-from adaptadores.secundarios.api.openmeteo_adapter import OpenMeteoAdapter
-from adaptadores.secundarios.api.openweather_adapter import OpenWeatherAdapter
-from adaptadores.secundarios.api.groq_adapter import GroqAdapter
+from dominio.consultar_y_analizar_clima import ObtenerClimaYAnalizar
+from adaptadores.secundarios.api.openmeteo_adaptador import OpenMeteoAdapter
+from adaptadores.secundarios.api.openweather_adaptador import OpenWeatherAdapter
+from adaptadores.secundarios.api.groq_adaptador import GroqAdapter
 from adaptadores.secundarios.persistencia.sqlite_repositorio import SQLiteRepositorio
-from adaptadores.primarios.streamlit_ui import StreamlitUI
+from adaptadores.primarios.interfaz_streamlit import StreamlitUI
 
 
 def crear_aplicacion():

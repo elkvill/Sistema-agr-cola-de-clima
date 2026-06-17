@@ -5,29 +5,29 @@ from datetime import datetime
 
 @dataclass
 class MedicionActual:
-    temp: float
-    humidity: float
-    precipitation: float
+    temperatura: float
+    humedad: float
+    precipitacion: float
 
 
 @dataclass
 class PronosticoDia:
-    date: str
-    temp_max: float
-    temp_min: float
-    precipitation: float
-    humidity: float
+    fecha: str
+    temperatura_max: float
+    temperatura_min: float
+    precipitacion: float
+    humedad: float
 
 
 @dataclass
 class DatosClima:
     actual: MedicionActual
-    forecast: List[PronosticoDia]
+    pronostico: List[PronosticoDia]
 
 
 @dataclass
 class AnalisisLocal:
-    status: str
+    estado: str
     mensaje: str
     condiciones: List[str]
 
@@ -40,12 +40,12 @@ class ResultadoConsulta:
     recomendacion_ia: str
     clasificacion_dias: List[dict]
     modo_offline: bool
-    stats: Optional[dict] = None
+    estadisticas: Optional[dict] = None
 
 
 @dataclass
 class ConsultaHistorial:
     fecha: str
     ciudad: str
-    temp: float
-    status: str
+    temperatura: float
+    estado: str

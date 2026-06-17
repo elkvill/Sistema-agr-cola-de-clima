@@ -19,19 +19,19 @@ class OpenMeteoAdapter(ServicioClima):
             data = json.loads(r.read().decode())
 
         actual = MedicionActual(
-            temp=data["current"]["temperature_2m"],
-            humidity=data["current"]["relative_humidity_2m"],
-            precipitation=data["current"].get("precipitation", 0)
+            temperatura=data["current"]["temperature_2m"],
+            humedad=data["current"]["relative_humidity_2m"],
+            precipitacion=data["current"].get("precipitation", 0)
         )
 
-        forecast = []
+        pronostico = []
         for i in range(len(data["daily"]["time"])):
-            forecast.append(PronosticoDia(
-                date=data["daily"]["time"][i],
-                temp_max=data["daily"]["temperature_2m_max"][i],
-                temp_min=data["daily"]["temperature_2m_min"][i],
-                precipitation=data["daily"]["precipitation_sum"][i],
-                humidity=0
+            pronostico.append(PronosticoDia(
+                fecha=data["daily"]["time"][i],
+                temperatura_max=data["daily"]["temperature_2m_max"][i],
+                temperatura_min=data["daily"]["temperature_2m_min"][i],
+                precipitacion=data["daily"]["precipitation_sum"][i],
+                humedad=0
             ))
 
-        return DatosClima(actual=actual, forecast=forecast)
+        return DatosClima(actual=actual, pronostico=pronostico)

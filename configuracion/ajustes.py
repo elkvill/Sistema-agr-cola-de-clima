@@ -1,13 +1,15 @@
+import os
+
 # Configuración del Sistema Agrícola Nicaragua
 
 # Selección de API
 # Opciones: "openmeteo", "openweather"
-USAR_API = "openmeteo"
+
+USAR_API = "openweather"
 
 # API Keys (desde variables de entorno - nunca hardcodear)
-import os
-CLAVE_API_OPENWEATHER = os.environ.get("OPENWEATHER_API_KEY", "")
-CLAVE_API_GROQ = os.environ.get("GROQ_API_KEY", "")
+CLAVE_API_OPENWEATHER = os.getenv("CLAVE_API_OPENWEATHER", "")
+CLAVE_API_GROQ = os.getenv("CLAVE_API_GROQ", "")
 
 # Configuración de Ciudades en Nicaragua
 # Contiene: latitud, longitud, es_agricola
@@ -21,7 +23,7 @@ CIUDADES = {
     "Jinotega": {"lat": 13.0900, "lon": -86.0000, "es_agricola": True},
     "León": {"lat": 12.4378, "lon": -86.8780, "es_agricola": True},
     "Somoto (Madriz)": {"lat": 13.4808, "lon": -86.5821, "es_agricola": True},
-    # Zona urbana
+
     "Managua": {"lat": 12.1328, "lon": -86.2504, "es_agricola": False},
     "Masaya": {"lat": 11.9744, "lon": -86.0942, "es_agricola": True},
     "Matagalpa": {"lat": 12.9256, "lon": -85.9175, "es_agricola": True},

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 
+
 class PDF(FPDF):
     def header(self):
         self.set_font('Helvetica', 'B', 15)
@@ -15,36 +16,39 @@ class PDF(FPDF):
     def footer(self):
         self.set_y(-15)
         self.set_font('Helvetica', 'I', 8)
-        self.cell(0, 10, f'Página {self.page_no()} | Generado el {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', 0, 0, 'C')
+        self.cell(
+            0, 10, f'Página {self.page_no()} | Generado el {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', 0, 0, 'C')
+
 
 def generar_pdf_diagnostico(ciudad, datos_actuales, recomendacion_ia, historial_chat):
     pdf = PDF()
     pdf.add_page()
-    
+
     # Título del Informe
     pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(0, 10, f'Informe de Diagnóstico Meteorológico: {ciudad}', 0, 1, 'L')
+    pdf.cell(
+        0, 10, f'Informe de Diagnóstico Meteorológico: {ciudad}', 0, 1, 'L')
     pdf.ln(5)
 
-    # Resumen Ejecutivo
+    # Resumen
     pdf.set_font('Helvetica', 'B', 12)
     pdf.cell(0, 10, '1. Resumen Ejecutivo (Estado Actual)', 0, 1, 'L')
     pdf.set_font('Helvetica', '', 11)
-    
-    # Crear una tabla simple para datos actuales
+
+    # Crear una tabla para datos actuales
     data = [
         ['Variable', 'Valor'],
-        ['Temperatura', f"{datos_actuales.get('temp')} °C"],
-        ['Humedad', f"{datos_actuales.get('humidity')} %"],
-        ['Precipitación', f"{datos_actuales.get('precipitation')} mm"],
+        ['Temperatura', f"{datos_actuales.get('temperatura')} °C"],
+        ['Humedad', f"{datos_actuales.get('humedad')} %"],
+        ['Precipitación', f"{datos_actuales.get('precipitacion')} mm"],
         ['Viento', f"{datos_actuales.get('windspeed', 'N/A')} km/h"]
     ]
-    
+
     for row in data:
         pdf.cell(40, 8, row[0], 1)
         pdf.cell(40, 8, row[1], 1)
         pdf.ln()
-    
+
     pdf.ln(10)
 
     # Análisis Predictivo de IA
@@ -59,8 +63,8 @@ def generar_pdf_diagnostico(ciudad, datos_actuales, recomendacion_ia, historial_
         pdf.set_font('Helvetica', 'B', 12)
         pdf.cell(0, 10, '3. Consultas Relevantes del Chat', 0, 1, 'L')
         pdf.set_font('Helvetica', '', 10)
-        
-        relevantes = historial_chat[-6:] # 3 pares de pregunta/respuesta
+
+        relevantes = historial_chat[-6:]  # 3 pares de pregunta/respuesta
         for msg in relevantes:
             rol = "Usuario" if msg['role'] == "user" else "Experto"
             pdf.set_font('Helvetica', 'B', 10)
@@ -71,10 +75,11 @@ def generar_pdf_diagnostico(ciudad, datos_actuales, recomendacion_ia, historial_
 
     return bytes(pdf.output())
 
+
 def generar_pdf_estadistico(ciudad, forecast_data, stats, alertas):
     pdf = PDF()
     pdf.add_page()
-    
+
     # Título del Informe
     pdf.set_font('Helvetica', 'B', 14)
     pdf.cell(0, 10, f'Reporte de Análisis Estadístico: {ciudad}', 0, 1, 'L')
@@ -84,7 +89,7 @@ def generar_pdf_estadistico(ciudad, forecast_data, stats, alertas):
     pdf.set_font('Helvetica', 'B', 12)
     pdf.cell(0, 10, '1. Estadísticas Descriptivas de la Semana', 0, 1, 'L')
     pdf.set_font('Helvetica', '', 11)
-    
+
     data_stats = [
         ['Métrica', 'Valor'],
         ['Temperatura Media', f"{stats['media']:.1f} °C"],
@@ -93,31 +98,33 @@ def generar_pdf_estadistico(ciudad, forecast_data, stats, alertas):
         ['Lluvia Total Semanal', f"{stats['lluvia_total']:.1f} mm"],
         ['Tendencia Térmica', stats['tendencia']]
     ]
-    
+
     for row in data_stats:
         pdf.cell(60, 8, row[0], 1)
         pdf.cell(60, 8, row[1], 1)
         pdf.ln()
-    
+
     pdf.ln(10)
 
     # Gráfico de Tendencia
     pdf.set_font('Helvetica', 'B', 12)
     pdf.cell(0, 10, '2. Visualización de Tendencias', 0, 1, 'L')
-    
+
     # Crear gráfico con Matplotlib
     df = pd.DataFrame(forecast_data)
     plt.figure(figsize=(8, 4))
-    sns.lineplot(x='date', y='temp_max', data=df, label='Temp Máx', marker='o', color='red')
-    sns.lineplot(x='date', y='temp_min', data=df, label='Temp Mín', marker='o', color='blue')
+    sns.lineplot(x='fecha', y='temperatura_max', data=df,
+                 label='Temp Máx', marker='o', color='red')
+    sns.lineplot(x='fecha', y='temperatura_min', data=df,
+                 label='Temp Mín', marker='o', color='blue')
     plt.title(f'Tendencia de Temperatura en {ciudad}')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    
+
     img_buf = BytesIO()
     plt.savefig(img_buf, format='png')
     plt.close()
-    
+
     pdf.image(img_buf, x=10, w=180)
     pdf.ln(5)
 
@@ -128,5 +135,5 @@ def generar_pdf_estadistico(ciudad, forecast_data, stats, alertas):
         pdf.set_font('Helvetica', '', 10)
         for alerta in alertas:
             pdf.multi_cell(0, 6, f"- {alerta}")
-            
+
     return bytes(pdf.output())
