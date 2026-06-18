@@ -4,6 +4,14 @@ from datetime import datetime
 
 
 @dataclass
+class Ciudad:
+    nombre: str
+    latitud: float
+    longitud: float
+    es_agricola: bool
+
+
+@dataclass
 class MedicionActual:
     temperatura: float
     humedad: float

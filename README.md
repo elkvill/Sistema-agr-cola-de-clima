@@ -12,8 +12,8 @@ El SIA Nicaragua ha sido desarrollado como una herramienta modular que permite a
 ProyectoExamenSismos/
 ├── dominio/                     # Núcleo de la aplicación (Hexágono)
 │   ├── entidades.py             # Modelos de negocio (MedicionActual, AnalisisLocal, etc.)
-│   ├── puertos.py               # Interfaces abstractas (ServicioClima, RepositorioClima, ServicioIA)
-│   ├── estadisticas.py          # Cálculo de métricas climáticas
+│   ├── puertos.py               # Interfaces abstractas (ServicioClima, PuertoClima, etc.)
+│   ├── estadisticas.py          # Cálculo de métricas climáticas (mean, stdev, mediana)
 │   ├── excepciones.py           # Excepciones personalizadas de dominio
 │   └── consultar_y_analizar_clima.py   # Lógica de negocio orquestada (ObtenerClimaYAnalizar)
 ├── adaptadores/
@@ -21,11 +21,12 @@ ProyectoExamenSismos/
 │   │   └── interfaz_streamlit.py # Interfaz de usuario (Streamlit)
 │   └── secundarios/
 │       ├── api/
-│       │   ├── openmeteo_adaptador.py    # API Open-Meteo (gratuita, sin llave)
 │       │   ├── openweather_adaptador.py  # API OpenWeatherMap
 │       │   └── groq_adaptador.py         # IA Groq (Llama 3) para recomendaciones
 │       └── persistencia/
-│           └── sqlite_repositorio.py   # SQLite con mappers, migraciones, CHECKs y purga
+│           ├── mapeadores.py             # Row models + mappers (FilaCiudad, MapeadorClima, etc.)
+│           ├── adaptadores_sqlite.py     # Adaptadores SQLite separados por puerto
+│           └── sqlite_repositorio.py     # (legado)
 ├── ensamblaje/
 │   └── contenedor.py           # Composition Root (crea instancias y realiza inyección de dependencias)
 ├── configuracion/
@@ -64,13 +65,15 @@ graph TD
     subgraph Puertos_Secundarios["Puertos Secundarios"]
         P_CLIMA["ServicioClima (Puerto)"]:::port
         P_IA["ServicioIA (Puerto)"]:::port
-        P_REPO["RepositorioClima (Puerto)"]:::port
+        P_REPO["PuertoClima (Puerto)"]:::port
+        P_ANALISIS["PuertoAnalisis (Puerto)"]:::port
+        P_HIST["PuertoHistorial (Puerto)"]:::port
     end
 
     subgraph Capa_Adaptadores_Secundarios["Adaptadores Secundarios (Infraestructura)"]
-        API_CLIMA["OpenWeatherAdapter / OpenMeteoAdapter"]:::infra
+        API_CLIMA["OpenWeatherAdapter"]:::infra
         API_IA["GroqAdapter (IA)"]:::infra
-        SQLITE["SQLiteRepositorio (sqlite_repositorio.py)"]:::infra
+        SQLITE["Adaptadores SQLite (adaptadores_sqlite.py)"]:::infra
     end
 
     %% Relaciones de Dependencia y Flujo
@@ -119,13 +122,13 @@ graph TD
 
 - **Dominio (el Hexágono)**: Contiene las entidades del negocio, los puertos (interfaces abstractas) y los casos de uso. Está completamente aislado de la infraestructura (no importa `requests`, `sqlite3` ni Streamlit).
   - `entidades.py`: `MedicionActual`, `PronosticoDia`, `DatosClima`, `AnalisisLocal`, `ResultadoConsulta`, `ConsultaHistorial`
-  - `puertos.py`: `ServicioClima`, `ServicioIA`, `RepositorioClima`, `ConsultarClima` (todos interfaces abstractas ABC)
+  - `puertos.py`: `ServicioClima`, `ServicioIA`, `PuertoClima`, `PuertoAnalisis`, `PuertoHistorial`, `PuertoCiudades`, `ConsultarClima` (todos interfaces abstractas ABC)
   - `consultar_y_analizar_clima.py`: `ObtenerClimaYAnalizar` - orquesta el flujo de negocio sin depender de librerías externas.
 
 - **Adaptadores Secundarios (Infraestructura de salida)**: Implementan los puertos con tecnologías concretas.
-  - `openmeteo_adapter.py` / `openweather_adapter.py`: Conexiones REST con APIs meteorológicas.
-  - `groq_adapter.py`: Integración con Groq API para análisis mediante IA.
-  - `sqlite_repositorio.py`: Persistencia física relacional. Implementa un mapeador (Mapper) que traduce entre el modelo físico en español y las entidades del dominio con nombres en inglés.
+  - `openweather_adaptador.py`: Conexión REST con OpenWeatherMap API.
+  - `groq_adaptador.py`: Integración con Groq API para análisis mediante IA.
+  - `adaptadores_sqlite.py` + `mapeadores.py`: Persistencia SQLite con row models y mappers que traducen entre filas de BD y entidades de dominio.
 
 - **Adaptadores Primarios (Infraestructura de entrada)**: Interfaz de usuario o desencadenadores externos.
   - `interfaz_streamlit.py`: UI interactiva en Streamlit. Consume el puerto `ConsultarClima`.

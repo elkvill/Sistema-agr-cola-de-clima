@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from dominio.entidades import ResultadoConsulta, ConsultaHistorial
-from dominio.puertos import ConsultarClima, ServicioIA, RepositorioClima
+from dominio.puertos import ConsultarClima, ServicioIA, PuertoAnalisis, PuertoHistorial
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
 
 
@@ -75,11 +75,13 @@ def _hay_internet():
 class StreamlitUI:
     def __init__(self, caso_uso: ConsultarClima,
                  servicio_ia: ServicioIA,
-                 repositorio: RepositorioClima,
+                 repositorio_analisis: PuertoAnalisis,
+                 repositorio_historial: PuertoHistorial,
                  ciudades: dict):
         self._caso_uso = caso_uso
         self._servicio_ia = servicio_ia
-        self._repositorio = repositorio
+        self._repositorio_analisis = repositorio_analisis
+        self._repositorio_historial = repositorio_historial
         self._ciudades = ciudades
         self._inicializar_sesion()
 
@@ -158,7 +160,7 @@ class StreamlitUI:
                     return
 
             if resultado.modo_offline:
-                analisis_guardado = self._repositorio.cargar_analisis(
+                analisis_guardado = self._repositorio_analisis.cargar_analisis(
                     ciudad_sel)
                 if analisis_guardado:
                     resultado.recomendacion_ia = analisis_guardado.get(
@@ -271,7 +273,7 @@ class StreamlitUI:
                 st.error(f"Error: {e}")
 
     def _mostrar_historial(self):
-        historico = self._repositorio.historial(limite=5)
+        historico = self._repositorio_historial.obtener_historial(limite=5)
         if not historico:
             st.write("No hay historial en SQLite.")
         else:

@@ -2,14 +2,9 @@ import os
 
 # Configuración del Sistema Agrícola Nicaragua
 
-# Selección de API
-# Opciones: "openmeteo", "openweather"
-
-USAR_API = "openweather"
-
-# API Keys (desde variables de entorno - nunca hardcodear)
-CLAVE_API_OPENWEATHER = os.getenv("CLAVE_API_OPENWEATHER", "")
-CLAVE_API_GROQ = os.getenv("CLAVE_API_GROQ", "")
+# API Keys
+CLAVE_API_OPENWEATHER = os.environ.get("CLAVE_API_OPENWEATHER", "")
+CLAVE_API_GROQ = os.environ.get("CLAVE_API_GROQ", "")
 
 # Configuración de Ciudades en Nicaragua
 # Contiene: latitud, longitud, es_agricola

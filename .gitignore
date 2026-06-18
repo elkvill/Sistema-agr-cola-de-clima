@@ -1,21 +1,20 @@
 # Python cache
 __pycache__/
 *.pyc
-<<<<<<< HEAD
 
 # Datos y configuración local
 data/data.json
-=======
+
+# Base de datos
 *.db
->>>>>>> 3eda9ca (Arquitectura Hexagonal)
+
 .vscode/
 api_keys.txt
-<<<<<<< HEAD
 
-# Archivos de entorno y claves (¡Crucial!)
+# Archivos de entorno y claves
 .env
 .streamlit/secrets.toml
-=======
+
+# Documentos de exposicion
 explicacion_completa_exposicion.txt
 Explicacion_SQLite2.txt
->>>>>>> 3eda9ca (Arquitectura Hexagonal)

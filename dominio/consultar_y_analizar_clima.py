@@ -4,7 +4,8 @@ from dominio.entidades import (
     DatosClima, MedicionActual, AnalisisLocal, ResultadoConsulta
 )
 from dominio.puertos import (
-    ServicioClima, ServicioIA, RepositorioClima, ConsultarClima
+    ServicioClima, ServicioIA, PuertoClima, PuertoAnalisis,
+    PuertoHistorial, ConsultarClima
 )
 from dominio.estadisticas import calcular_estadisticas
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
@@ -94,10 +95,14 @@ def _calcular_stats(pronostico: List[dict]) -> dict:
 class ObtenerClimaYAnalizar(ConsultarClima):
     def __init__(self, servicio_clima: ServicioClima,
                  servicio_ia: ServicioIA,
-                 repositorio: RepositorioClima):
+                 repositorio_clima: PuertoClima,
+                 repositorio_analisis: PuertoAnalisis,
+                 repositorio_historial: PuertoHistorial):
         self._servicio_clima = servicio_clima
         self._servicio_ia = servicio_ia
-        self._repositorio = repositorio
+        self._repositorio_clima = repositorio_clima
+        self._repositorio_analisis = repositorio_analisis
+        self._repositorio_historial = repositorio_historial
 
     def ejecutar(self, ciudad_nombre: str, lat: float, lon: float,
                  es_agricola: bool) -> ResultadoConsulta:
@@ -106,7 +111,7 @@ class ObtenerClimaYAnalizar(ConsultarClima):
 
         if lat == 0 and lon == 0:
             modo_offline = True
-            datos = self._repositorio.cargar_clima(ciudad_nombre)
+            datos = self._repositorio_clima.cargar_clima(ciudad_nombre)
             if not datos:
                 raise DatosNoEncontradosError(
                     f"No hay datos locales para {ciudad_nombre}"
@@ -114,9 +119,9 @@ class ObtenerClimaYAnalizar(ConsultarClima):
         else:
             try:
                 datos = self._servicio_clima.obtener_actual(lat, lon)
-                self._repositorio.guardar_clima(ciudad_nombre, datos)
+                self._repositorio_clima.guardar_clima(ciudad_nombre, datos)
             except Exception as e:
-                datos_cargados = self._repositorio.cargar_clima(ciudad_nombre)
+                datos_cargados = self._repositorio_clima.cargar_clima(ciudad_nombre)
                 if datos_cargados:
                     datos = datos_cargados
                     modo_offline = True
@@ -140,12 +145,12 @@ class ObtenerClimaYAnalizar(ConsultarClima):
             except Exception:
                 rec_ia = ""
 
-        analisis_guardado = self._repositorio.cargar_analisis(ciudad_nombre)
+        analisis_guardado = self._repositorio_analisis.cargar_analisis(ciudad_nombre)
         if modo_offline and analisis_guardado:
             rec_ia = analisis_guardado.get('recomendacion_ia', '')
 
-        self._repositorio.guardar_analisis(ciudad_nombre, analisis, rec_ia)
-        self._repositorio.guardar_consulta_historial(
+        self._repositorio_analisis.guardar_analisis(ciudad_nombre, analisis, rec_ia)
+        self._repositorio_historial.guardar_consulta(
             ciudad_nombre, datos.actual.temperatura, analisis.estado
         )
 
