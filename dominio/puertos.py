@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from dominio.entidades import DatosClima, AnalisisLocal, ConsultaHistorial, Ciudad
+from dominio.entidades import DatosClima, AnalisisLocal, ConsultaHistorial, Ciudad, ResultadoConsulta
 
 
 class ServicioClima(ABC):
@@ -24,52 +24,6 @@ class ServicioIA(ABC):
         raise NotImplementedError
 
 
-class PuertoClima(ABC):
-
-    @abstractmethod
-    def guardar_clima(self, ciudad: str, datos: DatosClima) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def cargar_clima(self, ciudad: str) -> Optional[DatosClima]:
-        raise NotImplementedError
-
-
-class PuertoAnalisis(ABC):
-    # Puerto secundario: persistir y recuperar analisis.
-
-    @abstractmethod
-    def guardar_analisis(self, ciudad: str, analisis: AnalisisLocal,
-                         rec_ia: str) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def cargar_analisis(self, ciudad: str) -> Optional[dict]:
-        raise NotImplementedError
-
-
-class PuertoHistorial(ABC):
-
-    @abstractmethod
-    def guardar_consulta(self, ciudad: str, temperatura: float, estado: str) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def obtener_historial(self, limite: int = 5) -> List[ConsultaHistorial]:
-        raise NotImplementedError
-
-
-class PuertoCiudades(ABC):
-
-    @abstractmethod
-    def obtener_todas(self) -> List[Ciudad]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def obtener_agricolas(self) -> List[Ciudad]:
-        raise NotImplementedError
-
-
 class RepositorioClima(ABC):
 
     @abstractmethod
@@ -82,7 +36,7 @@ class RepositorioClima(ABC):
 
     @abstractmethod
     def guardar_analisis(self, ciudad: str, analisis: AnalisisLocal,
-                         rec_ia: str) -> None:
+                          rec_ia: str) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -90,11 +44,11 @@ class RepositorioClima(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def historial(self, limite: int = 5) -> List[ConsultaHistorial]:
+    def guardar_consulta(self, ciudad: str, temperatura: float, estado: str) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def guardar_consulta_historial(self, ciudad: str, temperatura: float, estado: str) -> None:
+    def obtener_historial(self, limite: int = 5) -> List[ConsultaHistorial]:
         raise NotImplementedError
 
 
@@ -102,5 +56,5 @@ class ConsultarClima(ABC):
 
     @abstractmethod
     def ejecutar(self, ciudad_nombre: str, lat: float, lon: float,
-                 es_agricola: bool) -> object:
+                 es_agricola: bool) -> ResultadoConsulta:
         raise NotImplementedError
