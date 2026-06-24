@@ -1,6 +1,7 @@
 import os
+from dotenv import load_dotenv
 
-# Configuración del Sistema Agrícola Nicaragua
+load_dotenv()  # Carga variables desde el archivo .env (solo pruebas locales)
 
 # API Keys
 CLAVE_API_OPENWEATHER = os.environ.get("CLAVE_API_OPENWEATHER", "")

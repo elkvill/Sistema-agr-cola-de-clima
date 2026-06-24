@@ -2,10 +2,10 @@ import sqlite3
 import os
 from typing import List, Optional
 
-from dominio.entidades import DatosClima, AnalisisLocal, ConsultaHistorial, Ciudad
-from dominio.puertos import PuertoClima, PuertoAnalisis, PuertoHistorial, PuertoCiudades
+from dominio.entidades import DatosClima, AnalisisLocal, ConsultaHistorial
+from dominio.puertos import RepositorioClima
 from adaptadores.secundarios.persistencia.mapeadores import (
-    MapeadorClima, MapeadorAnalisis, MapeadorHistorial, MapeadorCiudad, FilaCiudad
+    MapeadorClima, MapeadorAnalisis, MapeadorHistorial
 )
 
 
@@ -194,7 +194,7 @@ class _BaseSqlite:
         cursor.execute("DELETE FROM log_auditoria WHERE date(fecha) < date('now', '-365 days')")
 
 
-class AdaptadorSqliteClima(_BaseSqlite, PuertoClima):
+class AdaptadorSqlite(_BaseSqlite, RepositorioClima):
     def guardar_clima(self, ciudad: str, datos: DatosClima) -> None:
         conn = self._conectar()
         cursor = conn.cursor()
@@ -236,8 +236,6 @@ class AdaptadorSqliteClima(_BaseSqlite, PuertoClima):
         finally:
             conn.close()
 
-
-class AdaptadorSqliteAnalisis(_BaseSqlite, PuertoAnalisis):
     def guardar_analisis(self, ciudad: str, analisis: AnalisisLocal, rec_ia: str) -> None:
         conn = self._conectar()
         cursor = conn.cursor()
@@ -278,8 +276,6 @@ class AdaptadorSqliteAnalisis(_BaseSqlite, PuertoAnalisis):
         finally:
             conn.close()
 
-
-class AdaptadorSqliteHistorial(_BaseSqlite, PuertoHistorial):
     def guardar_consulta(self, ciudad: str, temperatura: float, estado: str) -> None:
         conn = self._conectar()
         cursor = conn.cursor()
@@ -296,30 +292,5 @@ class AdaptadorSqliteHistorial(_BaseSqlite, PuertoHistorial):
         try:
             cursor.execute("SELECT fecha_consulta, ciudad, temperatura, estado FROM historial_consultas ORDER BY fecha_consulta DESC LIMIT ?", (limite,))
             return [MapeadorHistorial.fila_a_historial(r) for r in cursor.fetchall()]
-        finally:
-            conn.close()
-
-
-class AdaptadorSqliteCiudades(_BaseSqlite, PuertoCiudades):
-    def _fila_a_ciudad(self, fila: tuple) -> Ciudad:
-        return MapeadorCiudad.a_dominio(FilaCiudad(
-            nombre=fila[0], latitud=fila[1], longitud=fila[2], es_agricola=fila[3]
-        ))
-
-    def obtener_todas(self) -> List[Ciudad]:
-        conn = self._conectar()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("SELECT nombre, latitud, longitud, es_agricola FROM ciudades ORDER BY nombre")
-            return [self._fila_a_ciudad(r) for r in cursor.fetchall()]
-        finally:
-            conn.close()
-
-    def obtener_agricolas(self) -> List[Ciudad]:
-        conn = self._conectar()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("SELECT nombre, latitud, longitud, es_agricola FROM ciudades WHERE es_agricola = 1 ORDER BY nombre")
-            return [self._fila_a_ciudad(r) for r in cursor.fetchall()]
         finally:
             conn.close()
