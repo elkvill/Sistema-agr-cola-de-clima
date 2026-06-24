@@ -1,162 +1,83 @@
-from typing import List, Optional
+"""
+Caso de uso principal del dominio: ObtenerClimaYAnalizar.
+
+Principio SRP: Esta clase tiene una única responsabilidad → orquestar
+el flujo completo de una consulta de clima. No analiza condiciones,
+no genera recomendaciones, no clasifica días. Delega cada
+responsabilidad a su clase especializada.
+
+Principio DIP: Depende exclusivamente de abstracciones (puertos)
+definidas en dominio/puertos.py. Nunca importa adaptadores concretos.
+
+Principio LSP: Implementa ConsultarClima. Cualquier cliente que use
+el puerto ConsultarClima puede recibir una instancia de esta clase
+sin necesitar conocer su tipo concreto.
+"""
+from typing import List
 
 from dominio.entidades import (
-    DatosClima, MedicionActual, AnalisisLocal, ResultadoConsulta
+    DatosClima, AnalisisLocal, ResultadoConsulta
 )
 from dominio.puertos import (
     ServicioClima, ServicioIA, RepositorioClima, ConsultarClima
 )
 from dominio.estadisticas import calcular_estadisticas
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
-
-
-UMBRALES = {
-    "temp_max": 35.0, "temp_min": 15.0, "rain_heavy": 15.0,
-    "humidity_low": 40.0, "humidity_high": 90.0,
-}
-
-
-def _analizar_condiciones(temperatura: float, humedad: float,
-                          precipitacion: float) -> List[str]:
-    condiciones = []
-    if temperatura >= UMBRALES['temp_max']:
-        condiciones.append("CALOR_EXTREMO")
-    elif temperatura <= UMBRALES['temp_min']:
-        condiciones.append("FRIO_BAJO")
-    if precipitacion >= UMBRALES['rain_heavy']:
-        condiciones.append("LLUVIA_INTENSA")
-    if humedad <= UMBRALES['humidity_low']:
-        condiciones.append("HUMEDAD_BAJA")
-    elif humedad >= UMBRALES['humidity_high']:
-        condiciones.append("HUMEDAD_ALTA")
-    return condiciones
-
-
-def _generar_recomendacion_local(es_agricola: bool,
-                                  condiciones: List[str]) -> AnalisisLocal:
-    if not es_agricola:
-        return AnalisisLocal(
-            estado="URBAN",
-            mensaje="Zona urbana. Sin recomendaciones agricolas.",
-            condiciones=[]
-        )
-    if not condiciones:
-        return AnalisisLocal(
-            estado="FAVORABLE",
-            mensaje="Condiciones ideales para siembra y cultivo.",
-            condiciones=[]
-        )
-    if "LLUVIA_INTENSA" in condiciones:
-        return AnalisisLocal(
-            estado="RIESGOSO",
-            mensaje="Riesgo de inundacion. No aplicar fertilizantes.",
-            condiciones=condiciones
-        )
-    if "CALOR_EXTREMO" in condiciones or "HUMEDAD_BAJA" in condiciones:
-        return AnalisisLocal(
-            estado="RIESGOSO",
-            mensaje="Estres hidrico. Se recomienda riego temprano.",
-            condiciones=condiciones
-        )
-    return AnalisisLocal(
-        estado="NORMAL",
-        mensaje="Condiciones aceptables. Monitorear el suelo.",
-        condiciones=condiciones
-    )
-
-
-def _clasificar_dias(pronostico: List[dict]) -> List[dict]:
-    clasificacion = []
-    for dia in pronostico:
-        score = 0
-        if dia['temperatura_max'] >= UMBRALES['temp_max']:
-            score += 2
-        if dia['precipitacion'] >= UMBRALES['rain_heavy']:
-            score += 2
-        if dia['humedad'] <= UMBRALES['humidity_low']:
-            score += 1
-        if score == 0:
-            etiqueta = "Favorable"
-        elif score <= 2:
-            etiqueta = "Normal"
-        else:
-            etiqueta = "Riesgoso"
-        clasificacion.append({"fecha": dia['fecha'], "etiqueta": etiqueta})
-    return clasificacion
-
-
-def _calcular_stats(pronostico: List[dict]) -> dict:
-    if not pronostico:
-        return {}
-    return calcular_estadisticas(pronostico)
+from dominio.analizador import (
+    AnalizadorCondiciones, GeneradorRecomendacion, ClasificadorPronostico
+)
 
 
 class ObtenerClimaYAnalizar(ConsultarClima):
+    """
+    Caso de uso: consulta el clima, analiza condiciones y genera recomendaciones.
+
+    SRP: Orquesta el flujo; delega análisis, recomendación y clasificación
+         a sus respectivas clases especializadas.
+    DIP: Todos los colaboradores son inyectados como abstracciones.
+    LSP: Implementa ConsultarClima; es sustituible en cualquier punto
+         donde se espere ese puerto.
+    """
+
     def __init__(self, servicio_clima: ServicioClima,
                  servicio_ia: ServicioIA,
                  repositorio: RepositorioClima):
+        # DIP: dependencias inyectadas como abstracciones, no como concretos
         self._servicio_clima = servicio_clima
         self._servicio_ia = servicio_ia
         self._repositorio = repositorio
 
+        # SRP: colaboradores especializados, cada uno con una responsabilidad
+        self._analizador = AnalizadorCondiciones()
+        self._generador = GeneradorRecomendacion()
+        self._clasificador = ClasificadorPronostico()
+
     def ejecutar(self, ciudad_nombre: str, lat: float, lon: float,
                  es_agricola: bool) -> ResultadoConsulta:
-        datos = None
-        modo_offline = False
+        """
+        Ejecuta la consulta completa de clima para una ciudad.
 
-        if lat == 0 and lon == 0:
-            modo_offline = True
-            datos = self._repositorio.cargar_clima(ciudad_nombre)
-            if not datos:
-                raise DatosNoEncontradosError(
-                    f"No hay datos locales para {ciudad_nombre}"
-                )
-        else:
-            try:
-                datos = self._servicio_clima.obtener_actual(lat, lon)
-                self._repositorio.guardar_clima(ciudad_nombre, datos)
-            except Exception as e:
-                datos_cargados = self._repositorio.cargar_clima(ciudad_nombre)
-                if datos_cargados:
-                    datos = datos_cargados
-                    modo_offline = True
-                else:
-                    raise ApiCaidaError(
-                        f"No hay conexión a internet y no se encontraron datos de respaldo locales para {ciudad_nombre}. Detalle: {e}"
-                    )
+        LSP: Este método cumple el contrato de ConsultarClima.ejecutar().
+        Siempre retorna un ResultadoConsulta válido o lanza una excepción
+        del dominio (ApiCaidaError / DatosNoEncontradosError).
+        No lanza excepciones inesperadas que rompan el contrato.
+        """
+        datos, modo_offline = self._obtener_datos(ciudad_nombre, lat, lon)
 
-        condiciones = _analizar_condiciones(
-            datos.actual.temperatura, datos.actual.humedad, datos.actual.precipitacion
+        # Delegación a clases SRP especializadas
+        condiciones = self._analizador.analizar(
+            datos.actual.temperatura,
+            datos.actual.humedad,
+            datos.actual.precipitacion
         )
-        analisis = _generar_recomendacion_local(es_agricola, condiciones)
-
-        rec_ia = ""
-        if not modo_offline:
-            try:
-                rec_ia = self._servicio_ia.generar_recomendacion(
-                    datos.actual.temperatura, datos.actual.humedad,
-                    datos.actual.precipitacion
-                )
-            except Exception:
-                rec_ia = ""
-
-        analisis_guardado = self._repositorio.cargar_analisis(ciudad_nombre)
-        if modo_offline and analisis_guardado:
-            rec_ia = analisis_guardado.get('recomendacion_ia', '')
-
-        self._repositorio.guardar_analisis(ciudad_nombre, analisis, rec_ia)
-        self._repositorio.guardar_consulta(
-            ciudad_nombre, datos.actual.temperatura, analisis.estado
+        analisis = self._generador.generar(es_agricola, condiciones)
+        rec_ia = self._obtener_recomendacion_ia(
+            ciudad_nombre, datos, modo_offline, analisis
         )
 
-        pronostico_dicts = [
-            {"fecha": d.fecha, "temperatura_max": d.temperatura_max,
-             "temperatura_min": d.temperatura_min, "precipitacion": d.precipitacion,
-             "humedad": d.humedad}
-            for d in datos.pronostico
-        ]
-        clasificacion = _clasificar_dias(pronostico_dicts)
-        estadisticas = _calcular_stats(pronostico_dicts)
+        pronostico_dicts = self._normalizar_pronostico(datos)
+        clasificacion = self._clasificador.clasificar(pronostico_dicts)
+        estadisticas = calcular_estadisticas(pronostico_dicts) if pronostico_dicts else {}
 
         return ResultadoConsulta(
             ciudad=ciudad_nombre,
@@ -167,3 +88,69 @@ class ObtenerClimaYAnalizar(ConsultarClima):
             modo_offline=modo_offline,
             estadisticas=estadisticas
         )
+
+    # ── Métodos privados de apoyo ─────────────────────────────────────────────
+
+    def _obtener_datos(self, ciudad_nombre: str,
+                       lat: float, lon: float) -> tuple:
+        """Obtiene datos del clima (en línea o desde caché local)."""
+        if lat == 0 and lon == 0:
+            datos = self._repositorio.cargar_clima(ciudad_nombre)
+            if not datos:
+                raise DatosNoEncontradosError(
+                    f"No hay datos locales para {ciudad_nombre}"
+                )
+            return datos, True
+
+        try:
+            datos = self._servicio_clima.obtener_actual(lat, lon)
+            self._repositorio.guardar_clima(ciudad_nombre, datos)
+            return datos, False
+        except Exception as e:
+            datos_cargados = self._repositorio.cargar_clima(ciudad_nombre)
+            if datos_cargados:
+                return datos_cargados, True
+            raise ApiCaidaError(
+                f"No hay conexión y no hay datos de respaldo para "
+                f"{ciudad_nombre}. Detalle: {e}"
+            )
+
+    def _obtener_recomendacion_ia(self, ciudad_nombre: str,
+                                   datos: DatosClima, modo_offline: bool,
+                                   analisis: AnalisisLocal) -> str:
+        """Obtiene la recomendación de IA (en línea) o desde caché."""
+        if not modo_offline:
+            try:
+                rec_ia = self._servicio_ia.generar_recomendacion(
+                    datos.actual.temperatura,
+                    datos.actual.humedad,
+                    datos.actual.precipitacion
+                )
+                self._repositorio.guardar_analisis(ciudad_nombre, analisis, rec_ia)
+                self._repositorio.guardar_consulta(
+                    ciudad_nombre, datos.actual.temperatura, analisis.estado
+                )
+                return rec_ia
+            except Exception:
+                pass
+
+        analisis_guardado = self._repositorio.cargar_analisis(ciudad_nombre)
+        rec_ia = analisis_guardado.get('recomendacion_ia', '') if analisis_guardado else ''
+        self._repositorio.guardar_analisis(ciudad_nombre, analisis, rec_ia)
+        self._repositorio.guardar_consulta(
+            ciudad_nombre, datos.actual.temperatura, analisis.estado
+        )
+        return rec_ia
+
+    def _normalizar_pronostico(self, datos: DatosClima) -> list:
+        """Convierte entidades de pronóstico a diccionarios planos."""
+        return [
+            {
+                "fecha": d.fecha,
+                "temperatura_max": d.temperatura_max,
+                "temperatura_min": d.temperatura_min,
+                "precipitacion": d.precipitacion,
+                "humedad": d.humedad,
+            }
+            for d in datos.pronostico
+        ]
