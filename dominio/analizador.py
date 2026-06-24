@@ -1,18 +1,4 @@
-"""
-Principio SRP (Single Responsibility Principle) - Responsabilidad Única.
 
-Este módulo contiene tres clases de dominio, cada una con una única razón
-para cambiar:
-
-- AnalizadorCondiciones: cambia solo si cambian los umbrales o las reglas
-  de detección de alertas climáticas.
-
-- GeneradorRecomendacion: cambia solo si cambia la lógica de selección de
-  qué estrategia aplicar (qué condición tiene prioridad).
-
-- ClasificadorPronostico: cambia solo si cambia cómo se clasifica
-  la peligrosidad de cada día del pronóstico.
-"""
 from typing import List
 
 from dominio.entidades import AnalisisLocal
@@ -37,22 +23,9 @@ _UMBRALES = {
 
 
 class AnalizadorCondiciones:
-    """
-    SRP: Única responsabilidad → detectar qué alertas climáticas están activas.
-
-    Si los umbrales cambian o se añaden nuevas alertas (ej: VIENTO_FUERTE),
-    solo esta clase se modifica.
-    """
 
     def analizar(self, temperatura: float, humedad: float,
                  precipitacion: float) -> List[str]:
-        """
-        Evalúa los valores climáticos y retorna una lista de códigos de alerta.
-
-        Returns:
-            Lista de strings con las condiciones activas
-            (ej: ['CALOR_EXTREMO', 'HUMEDAD_BAJA']).
-        """
         condiciones = []
         if temperatura >= _UMBRALES['temp_max']:
             condiciones.append("CALOR_EXTREMO")
@@ -68,30 +41,9 @@ class AnalizadorCondiciones:
 
 
 class GeneradorRecomendacion:
-    """
-    SRP: Única responsabilidad → seleccionar y aplicar la estrategia correcta.
-
-    Aplica OCP mediante composición: delega la generación del AnalisisLocal
-    a la EstrategiaRecomendacion correspondiente. Para añadir un nuevo tipo
-    de zona o prioridad, solo se añade una nueva condición en _seleccionar()
-    o una nueva EstrategiaRecomendacion, sin tocar las existentes.
-
-    Principio LSP: cualquier implementación de EstrategiaRecomendacion
-    puede sustituirse aquí sin romper el comportamiento del generador.
-    """
 
     def generar(self, es_agricola: bool,
                 condiciones: List[str]) -> AnalisisLocal:
-        """
-        Selecciona la estrategia adecuada y genera la recomendación.
-
-        Args:
-            es_agricola: Indica si la ciudad es zona agrícola.
-            condiciones: Lista de códigos de alerta activos.
-
-        Returns:
-            AnalisisLocal con el resultado de la recomendación.
-        """
         estrategia: EstrategiaRecomendacion = self._seleccionar(
             es_agricola, condiciones
         )
@@ -99,7 +51,6 @@ class GeneradorRecomendacion:
 
     def _seleccionar(self, es_agricola: bool,
                      condiciones: List[str]) -> EstrategiaRecomendacion:
-        """Determina qué estrategia usar según el contexto."""
         if not es_agricola:
             return RecomendacionUrbana()
         if not condiciones:
@@ -112,25 +63,8 @@ class GeneradorRecomendacion:
 
 
 class ClasificadorPronostico:
-    """
-    SRP: Única responsabilidad → clasificar la peligrosidad de cada día
-    del pronóstico de 5 días.
-
-    Si el criterio de puntuación cambia (ej: añadir viento como factor),
-    solo esta clase se modifica, sin afectar AnalizadorCondiciones ni
-    GeneradorRecomendacion.
-    """
 
     def clasificar(self, pronostico: List[dict]) -> List[dict]:
-        """
-        Asigna una etiqueta (Favorable/Normal/Riesgoso) a cada día.
-
-        Args:
-            pronostico: Lista de diccionarios con datos diarios del clima.
-
-        Returns:
-            Lista de diccionarios con 'fecha' y 'etiqueta'.
-        """
         clasificacion = []
         for dia in pronostico:
             score = 0

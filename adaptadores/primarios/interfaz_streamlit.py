@@ -1,4 +1,3 @@
-import datetime
 import os
 import streamlit as st
 import socket
@@ -6,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from dominio.entidades import ResultadoConsulta, ConsultaHistorial
+from dominio.entidades import ResultadoConsulta
 from dominio.puertos import ConsultarClima, ServicioIA, RepositorioClima
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
 
@@ -72,28 +71,6 @@ def _hay_internet():
         return True
     except Exception:
         return False
-
-
-def _markdown_a_html(texto: str) -> str:
-    if not texto:
-        return ""
-    # Reemplazar negritas
-    partes = texto.split("**")
-    resultado = []
-    for idx, parte in enumerate(partes):
-        if idx % 2 == 1:
-            resultado.append(f"<b>{parte}</b>")
-        else:
-            resultado.append(parte)
-    texto_procesado = "".join(resultado)
-    
-    # Reemplazar viñetas simples
-    texto_procesado = texto_procesado.replace("\n- ", "<br>&bull; ")
-    texto_procesado = texto_procesado.replace("\n* ", "<br>&bull; ")
-    
-    # Reemplazar saltos de línea normales
-    texto_procesado = texto_procesado.replace("\n", "<br>")
-    return texto_procesado
 
 
 class StreamlitUI:

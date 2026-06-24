@@ -12,7 +12,7 @@ El SIA Nicaragua ha sido desarrollado como una herramienta modular que permite a
 ProyectoExamenSismos/
 ├── dominio/                     # Núcleo de la aplicación (Hexágono)
 │   ├── entidades.py             # Modelos de negocio (MedicionActual, AnalisisLocal, etc.)
-│   ├── puertos.py               # Interfaces abstractas (ServicioClima, PuertoClima, etc.)
+│   ├── puertos.py               # Interfaces abstractas (ServicioClima, RepositorioClima, etc.)
 │   ├── estadisticas.py          # Cálculo de métricas climáticas (mean, stdev, mediana)
 │   ├── excepciones.py           # Excepciones personalizadas de dominio
 │   └── consultar_y_analizar_clima.py   # Lógica de negocio orquestada (ObtenerClimaYAnalizar)
@@ -24,9 +24,8 @@ ProyectoExamenSismos/
 │       │   ├── openweather_adaptador.py  # API OpenWeatherMap
 │       │   └── groq_adaptador.py         # IA Groq (Llama 3) para recomendaciones
 │       └── persistencia/
-│           ├── mapeadores.py             # Row models + mappers (FilaCiudad, MapeadorClima, etc.)
-│           ├── adaptadores_sqlite.py     # Adaptadores SQLite separados por puerto
-│           └── sqlite_repositorio.py     # (legado)
+│           ├── mapeadores.py             # Mappers (MapeadorClima, MapeadorAnalisis, etc.)
+│           └── adaptadores_sqlite.py     # Adaptador SQLite unificado (AdaptadorSqlite)
 ├── ensamblaje/
 │   └── contenedor.py           # Composition Root (crea instancias y realiza inyección de dependencias)
 ├── configuracion/
@@ -65,9 +64,7 @@ graph TD
     subgraph Puertos_Secundarios["Puertos Secundarios"]
         P_CLIMA["ServicioClima (Puerto)"]:::port
         P_IA["ServicioIA (Puerto)"]:::port
-        P_REPO["PuertoClima (Puerto)"]:::port
-        P_ANALISIS["PuertoAnalisis (Puerto)"]:::port
-        P_HIST["PuertoHistorial (Puerto)"]:::port
+        P_REPO["RepositorioClima (Puerto)"]:::port
     end
 
     subgraph Capa_Adaptadores_Secundarios["Adaptadores Secundarios (Infraestructura)"]
@@ -122,7 +119,7 @@ graph TD
 
 - **Dominio (el Hexágono)**: Contiene las entidades del negocio, los puertos (interfaces abstractas) y los casos de uso. Está completamente aislado de la infraestructura (no importa `requests`, `sqlite3` ni Streamlit).
   - `entidades.py`: `MedicionActual`, `PronosticoDia`, `DatosClima`, `AnalisisLocal`, `ResultadoConsulta`, `ConsultaHistorial`
-  - `puertos.py`: `ServicioClima`, `ServicioIA`, `PuertoClima`, `PuertoAnalisis`, `PuertoHistorial`, `PuertoCiudades`, `ConsultarClima` (todos interfaces abstractas ABC)
+  - `puertos.py`: `ServicioClima`, `ServicioIA`, `RepositorioClima`, `ConsultarClima` (todos interfaces abstractas ABC)
   - `consultar_y_analizar_clima.py`: `ObtenerClimaYAnalizar` - orquesta el flujo de negocio sin depender de librerías externas.
 
 - **Adaptadores Secundarios (Infraestructura de salida)**: Implementan los puertos con tecnologías concretas.

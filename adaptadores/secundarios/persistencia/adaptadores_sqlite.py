@@ -1,5 +1,4 @@
 import sqlite3
-import os
 from typing import List, Optional
 
 from dominio.entidades import DatosClima, AnalisisLocal, ConsultaHistorial
@@ -7,12 +6,6 @@ from dominio.puertos import RepositorioClima
 from adaptadores.secundarios.persistencia.mapeadores import (
     MapeadorClima, MapeadorAnalisis, MapeadorHistorial
 )
-
-
-def _celsius_a_fahrenheit(celsius):
-    if celsius is None:
-        return None
-    return round((celsius * 9 / 5) + 32, 1)
 
 
 class _BaseSqlite:
@@ -27,7 +20,6 @@ class _BaseSqlite:
         cursor.execute("PRAGMA foreign_keys;")
         if cursor.fetchone()[0] != 1:
             raise RuntimeError("No se pudieron activar las claves foraneas")
-        conn.create_function("celsius_a_fahrenheit", 1, _celsius_a_fahrenheit)
         return conn
 
     def _inicializar(self):

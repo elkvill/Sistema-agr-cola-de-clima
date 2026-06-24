@@ -1,1 +1,0 @@
-from adaptadores.secundarios.api.openweather_adaptador import OpenWeatherAdapter

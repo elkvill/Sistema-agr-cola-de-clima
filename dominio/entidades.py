@@ -1,14 +1,5 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from datetime import datetime
-
-
-@dataclass
-class Ciudad:
-    nombre: str
-    latitud: float
-    longitud: float
-    es_agricola: bool
 
 
 @dataclass
