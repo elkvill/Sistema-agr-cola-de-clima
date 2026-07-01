@@ -2,10 +2,10 @@ import json
 import urllib.request
 import urllib.error
 
-from dominio.puertos import ServicioIA
+from dominio.puertos import ServicioRecomendacionIA, ServicioChatIA
 
 
-class GroqAdapter(ServicioIA):
+class GroqAdapter(ServicioRecomendacionIA, ServicioChatIA):
     def __init__(self, api_key: str):
         self._api_key = api_key
         self._url = "https://api.groq.com/openai/v1/chat/completions"

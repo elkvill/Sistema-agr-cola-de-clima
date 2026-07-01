@@ -5,28 +5,28 @@ from dominio.entidades import (
     DatosClima, AnalisisLocal, ResultadoConsulta
 )
 from dominio.puertos import (
-    ServicioClima, ServicioIA, RepositorioClima, ConsultarClima
+    ServicioClima, ServicioIA, RepositorioClima, ConsultarClima,
+    AnalizadorCondicionesPort, GeneradorRecomendacionPort, ClasificadorPronosticoPort
 )
 from dominio.estadisticas import calcular_estadisticas
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
-from dominio.analizador import (
-    AnalizadorCondiciones, GeneradorRecomendacion, ClasificadorPronostico
-)
 
 
 class ObtenerClimaYAnalizar(ConsultarClima):
 
     def __init__(self, servicio_clima: ServicioClima,
                  servicio_ia: ServicioIA,
-                 repositorio: RepositorioClima):
-        # dependencias inyectadas como abstracciones, no como concretos
+                 repositorio: RepositorioClima,
+                 analizador: AnalizadorCondicionesPort,
+                 generador: GeneradorRecomendacionPort,
+                 clasificador: ClasificadorPronosticoPort):
+        # dependencias inyectadas como abstracciones
         self._servicio_clima = servicio_clima
         self._servicio_ia = servicio_ia
         self._repositorio = repositorio
-
-        self._analizador = AnalizadorCondiciones()
-        self._generador = GeneradorRecomendacion()
-        self._clasificador = ClasificadorPronostico()
+        self._analizador = analizador
+        self._generador = generador
+        self._clasificador = clasificador
 
     def ejecutar(self, ciudad_nombre: str, lat: float, lon: float,
                  es_agricola: bool) -> ResultadoConsulta:

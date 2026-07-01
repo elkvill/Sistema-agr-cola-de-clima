@@ -1,87 +1,28 @@
-import os
 import streamlit as st
-import socket
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 
 from dominio.entidades import ResultadoConsulta
-from dominio.puertos import ConsultarClima, ServicioIA, RepositorioClima
+from dominio.puertos import ConsultarClima, ServicioIA, RepositorioClima, VerificadorConectividad
 from dominio.excepciones import ApiCaidaError, DatosNoEncontradosError
 
-
-def inyectar_css_personalizado(ruta):
-    posibles = [ruta, os.path.join(os.getcwd(), ruta),
-                os.path.join(os.path.dirname(__file__), "..",
-                             "..", "estilos", "estilos.css"),
-                "estilos/estilos.css"]
-    for p in posibles:
-        if os.path.exists(p):
-            with open(p, encoding='utf-8') as f:
-                st.markdown(f'<style>{f.read()}</style>',
-                            unsafe_allow_html=True)
-            return
-    st.markdown("""
-        <style>
-        .stApp { background-color: #F5F5DC !important; }
-        [data-testid="stSidebar"] { background-color: #1b5e20 !important; }
-        </style>
-    """, unsafe_allow_html=True)
-
-
-def _graficar_tendencia_temperatura(pronostico):
-    df = pd.DataFrame([vars(d) for d in pronostico])
-    df['etiq_fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d %b')
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['etiq_fecha'], y=df['temperatura_max'],
-                             name='Max', mode='lines+markers',
-                             line=dict(color='#d32f2f')))
-    fig.add_trace(go.Scatter(x=df['etiq_fecha'], y=df['temperatura_min'],
-                             name='Min', mode='lines+markers',
-                             line=dict(color='#1976d2')))
-    fig.update_layout(title='Tendencia de Temperatura',
-                      plot_bgcolor='rgba(0,0,0,0)',
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def _graficar_humedad(pronostico):
-    if all(getattr(d, 'humedad', 0) == 0 for d in pronostico):
-        st.info(
-            "Pronostico de humedad no disponible. `configuracion/ajustes.py` para ver estos datos.")
-        return
-    df = pd.DataFrame([vars(d) for d in pronostico])
-    df['etiq_fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d %b')
-    fig = px.bar(df, x='etiq_fecha', y='humedad',
-                 title='Pronostico de Humedad',
-                 color='humedad', color_continuous_scale='Blues')
-    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      coloraxis_showscale=False)
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def _hay_internet():
-    try:
-        socket.setdefaulttimeout(1.0)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(("1.1.1.1", 80))
-        s.close()
-        return True
-    except Exception:
-        return False
+from adaptadores.primarios.componente_graficos import (
+    graficar_tendencia_temperatura, graficar_humedad, mostrar_calendario_riesgo
+)
+from adaptadores.primarios.componente_chat import renderizar_chat
+from adaptadores.primarios.componente_reportes import renderizar_descargas_pdf
 
 
 class StreamlitUI:
+
     def __init__(self, caso_uso: ConsultarClima,
                  servicio_ia: ServicioIA,
                  repositorio: RepositorioClima,
-                 ciudades: dict):
+                 ciudades: dict,
+                 verificador_conectividad: VerificadorConectividad):
         self._caso_uso = caso_uso
         self._servicio_ia = servicio_ia
         self._repositorio = repositorio
         self._ciudades = ciudades
+        self._verificador_conectividad = verificador_conectividad
         self._inicializar_sesion()
 
     def _inicializar_sesion(self):
@@ -107,7 +48,7 @@ class StreamlitUI:
             ciudad_sel = st.selectbox(
                 "Seleccione la Ciudad", list(self._ciudades.keys())
             )
-            
+
             if st.session_state.ultima_ciudad != ciudad_sel:
                 st.session_state.analisis_hecho = False
                 st.session_state.data_clima = None
@@ -140,7 +81,7 @@ class StreamlitUI:
         with st.spinner("Obteniendo datos y analizando..."):
             try:
                 coord = self._ciudades[ciudad_sel]
-                if not _hay_internet():
+                if not self._verificador_conectividad.hay_conexion():
                     raise ConnectionError("Sin conexión a internet")
 
                 resultado = self._caso_uso.ejecutar(
@@ -203,29 +144,16 @@ class StreamlitUI:
         # Sección 2: Gráficos de Pronóstico y Calendario de Riesgo (Centro)
         st.markdown("### Pronóstico Semanal y Riesgo")
         with st.container():
-            _graficar_tendencia_temperatura(r.datos.pronostico)
+            graficar_tendencia_temperatura(r.datos.pronostico)
         with st.container():
-            _graficar_humedad(r.datos.pronostico)
-        
-        st.markdown("#### Calendario de Riesgo")
-        cols_cal = st.columns(7)
-        for i, c in enumerate(r.clasificacion_dias):
-            with cols_cal[i]:
-                fecha = c['fecha'][-5:]
-                color = "#d4edda" if c['etiqueta'] == 'Favorable' else "#fff3cd" if c['etiqueta'] == 'Normal' else "#f8d7da"
-                text_color = "#155724" if c['etiqueta'] == 'Favorable' else "#856404" if c['etiqueta'] == 'Normal' else "#721c24"
-                with st.container():
-                    st.markdown(
-                        f'<div style="background-color: {color}; color: {text_color}; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; font-size: 13px; min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid rgba(0,0,0,0.05);">'
-                        f'<div>{fecha}</div><div style="margin-top: 5px;">{c["etiqueta"]}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
+            graficar_humedad(r.datos.pronostico)
+
+        mostrar_calendario_riesgo(r.clasificacion_dias)
         st.divider()
 
         # Sección 3: Recomendación Agrícola y Análisis de la IA (Abajo, a pantalla completa)
         st.markdown("### Recomendaciones de Cultivo")
-        
+
         # Recomendación Local en contenedor aislado
         a = r.analisis
         color_local = "#d4edda" if a.estado == "FAVORABLE" else "#fff3cd" if a.estado == "NORMAL" else "#f8d7da"
@@ -247,51 +175,12 @@ class StreamlitUI:
 
         # Sección 4: Chat de Asesoría y Descarga de Reportes (Pie de página)
         col_chat, col_rep = st.columns([2, 1], gap="medium")
-        
+
         with col_chat:
-            st.markdown("### Asesoría Inteligente")
-            with st.expander("Abrir Chat Experto Nicaragua", expanded=True):
-                for idx, msg in enumerate(st.session_state.chat_historial):
-                    bg_color = "#e8f5e9" if msg["role"] == "user" else "#ffffff"
-                    border_color = "#c8e6c9" if msg["role"] == "user" else "#e0e0e0"
-                    with st.container():
-                        st.markdown(
-                            f'<div style="background-color: {bg_color}; border: 1px solid {border_color}; padding: 10px; border-radius: 8px; margin-bottom: 8px; width: 100%; box-sizing: border-box;">'
-                            f'<strong>{"Tú" if msg["role"] == "user" else "Asistente"}:</strong><br>{msg["content"]}'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-                with st.form(key="chat_form", clear_on_submit=True):
-                    prompt = st.text_input("¿Dudas sobre tu cultivo o el clima?", key="input_chat_text")
-                    enviar = st.form_submit_button("Enviar", use_container_width=True)
-                    if enviar and prompt:
-                        self._procesar_chat(prompt, r)
-                        st.rerun()
+            renderizar_chat(self._servicio_ia, r)
 
         with col_rep:
-            self._mostrar_descargas_pdf(ciudad_sel, r)
-
-    def _procesar_chat(self, prompt, r):
-        st.session_state.chat_historial.append(
-            {"role": "user", "content": prompt}
-        )
-        if st.session_state.modo_offline:
-            st.session_state.chat_historial.append(
-                {"role": "assistant", "content": "Chat no disponible en modo offline."}
-            )
-        else:
-            try:
-                resp = self._servicio_ia.chat(
-                    prompt, r.datos.actual.temperatura,
-                    r.datos.actual.humedad, r.datos.actual.precipitacion
-                )
-                st.session_state.chat_historial.append(
-                    {"role": "assistant", "content": resp}
-                )
-            except Exception as e:
-                st.session_state.chat_historial.append(
-                    {"role": "assistant", "content": f"Error: {e}"}
-                )
+            renderizar_descargas_pdf(ciudad_sel, r)
 
     def _mostrar_historial(self):
         historico = self._repositorio.obtener_historial(limite=5)
@@ -303,56 +192,3 @@ class StreamlitUI:
                     st.markdown(f"**{h.fecha}**")
                     st.markdown(f"**Ciudad:** {h.ciudad}")
                     st.markdown(f"**Temp:** {h.temperatura}C | **Estado:** {h.estado}")
-
-    def _mostrar_descargas_pdf(self, ciudad_sel, r):
-        st.divider()
-        st.markdown("### Descargar Reportes PDF")
-
-        try:
-            from adaptadores.secundarios.reportes.generador_pdf import generar_pdf_diagnostico, generar_pdf_estadistico
-
-            datos_actuales = {
-                'temperatura': r.datos.actual.temperatura,
-                'humedad': r.datos.actual.humedad,
-                'precipitacion': r.datos.actual.precipitacion,
-            }
-            pdf_diag = generar_pdf_diagnostico(
-                ciudad_sel, datos_actuales,
-                r.recomendacion_ia,
-                st.session_state.chat_historial
-            )
-            st.download_button(
-                label="Reporte de Diagnostico",
-                data=pdf_diag,
-                file_name=f"diagnostico_{ciudad_sel.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key="btn_descarga_diagnostico"
-            )
-
-            pronostico_lista = [
-                {"fecha": d.fecha, "temperatura_max": d.temperatura_max,
-                 "temperatura_min": d.temperatura_min, "precipitacion": d.precipitacion,
-                 "humedad": d.humedad}
-                for d in r.datos.pronostico
-            ]
-            alertas = [
-                f"{c['etiqueta']}: {c['fecha']}" for c in r.clasificacion_dias
-                if c['etiqueta'] == 'Riesgoso'
-            ]
-            pdf_est = generar_pdf_estadistico(
-                ciudad_sel, pronostico_lista,
-                r.estadisticas or {}, alertas
-            )
-            st.download_button(
-                label="Reporte Estadistico",
-                data=pdf_est,
-                file_name=f"estadistico_{ciudad_sel.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key="btn_descarga_estadistico"
-            )
-        except ImportError:
-            st.warning("Instala fpdf2 para habilitar la descarga de PDFs: pip install fpdf2")
-        except Exception as e:
-            st.error(f"Error al generar PDF: {e}")

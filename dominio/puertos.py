@@ -12,17 +12,55 @@ class ServicioClima(ABC):
         raise NotImplementedError
 
 
-class ServicioIA(ABC):
+class ServicioRecomendacionIA(ABC):
 
     @abstractmethod
     def generar_recomendacion(self, temperatura: float, humedad: float,
                               precipitacion: float) -> str:
         raise NotImplementedError
 
+
+class ServicioChatIA(ABC):
+
     @abstractmethod
     def chat(self, pregunta: str, temperatura: float, humedad: float,
              precipitacion: float) -> str:
         raise NotImplementedError
+
+
+class ServicioIA(ServicioRecomendacionIA, ServicioChatIA):
+    pass
+
+
+class AnalizadorCondicionesPort(ABC):
+
+    @abstractmethod
+    def analizar(self, temperatura: float, humedad: float,
+                 precipitacion: float) -> List[str]:
+        raise NotImplementedError
+
+
+class GeneradorRecomendacionPort(ABC):
+
+    @abstractmethod
+    def generar(self, es_agricola: bool,
+                condiciones: List[str]) -> AnalisisLocal:
+        raise NotImplementedError
+
+
+class ClasificadorPronosticoPort(ABC):
+
+    @abstractmethod
+    def clasificar(self, pronostico: List[dict]) -> List[dict]:
+        raise NotImplementedError
+
+
+class VerificadorConectividad(ABC):
+
+    @abstractmethod
+    def hay_conexion(self) -> bool:
+        raise NotImplementedError
+
 
 
 class RepositorioClima(ABC):
